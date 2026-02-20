@@ -2,7 +2,6 @@ import { createBrowserRouter } from "react-router-dom";
 import { RequireAuth } from "./RequireAuth.jsx";
 import { RequirePermission } from "./RequirePermission.jsx";
 import { RequireVerified } from "./RequireVerified.jsx";
-import { ParamFeaturePage } from "./route-elements.jsx";
 import { AdminDashboardPage } from "../../features/admin/pages/AdminDashboardPage.jsx";
 import { AuditTimelinePage } from "../../features/admin/pages/AuditTimelinePage.jsx";
 import { ReviewQueuePage } from "../../features/admin/pages/ReviewQueuePage.jsx";
@@ -17,6 +16,7 @@ import { BlacklistRemovalRequestPage } from "../../features/blacklist/pages/Blac
 import { BotControlPage } from "../../features/bot-control/pages/BotControlPage.jsx";
 import { ConfigRegistryPage } from "../../features/config-registry/pages/ConfigRegistryPage.jsx";
 import { NotificationsCenterPage } from "../../features/notifications/pages/NotificationsCenterPage.jsx";
+import { OrderDetailPage } from "../../features/orders/pages/OrderDetailPage.jsx";
 import { OrderSubmitPage } from "../../features/orders/pages/OrderSubmitPage.jsx";
 import { RoleMatrixPage } from "../../features/permissions/pages/RoleMatrixPage.jsx";
 import { PlayerbasePage } from "../../features/playerbase/pages/PlayerbasePage.jsx";
@@ -108,15 +108,7 @@ export const appRouter = createBrowserRouter([
           },
           {
             path: "orders/:publicId",
-            element: (
-              <ParamFeaturePage
-                title="Order Details"
-                description="Order-specific status, decisions, and moderation notes."
-                endpointHintBuilder={(params) =>
-                  `/api/v1/orders/${params.publicId || "{public_id}"}`
-                }
-              />
-            ),
+            element: <OrderDetailPage />,
           },
           {
             path: "roster",
