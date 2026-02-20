@@ -32,3 +32,24 @@
 3. Diff this tree against any remote/other-machine copy if available, and backfill remaining gaps.
 4. Keep the archive before making any new edits.
 
+
+## Second-pass recovery (current)
+- Replayed failed patch operations with fuzzy strategy, then stabilized corrupted merges.
+- Added missing frontend bootstrap files recovered from session logs:
+  - `frontend/package.json`
+  - `frontend/package-lock.json` (regenerated via `npm install`)
+  - `frontend/index.html`
+  - `frontend/vite.config.js`
+  - `frontend/src/main.jsx`
+  - `frontend/src/App.jsx`
+  - `frontend/src/index.css`
+  - `frontend/eslint.config.js`
+- Reconstructed Cloudflare helper module under `bot/cloudflare/` so bot imports compile cleanly.
+
+Validation after stabilization:
+- `python3 -m compileall backend bot` ✅
+- `frontend: npm run build` ✅
+- `frontend: npm run lint` ✅
+
+Current recovery commit:
+- `99e02e7` (`recovery: apply second-pass restore and stabilize frontend/backend checks`)
