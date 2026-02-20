@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+from backend.core.config import get_settings
+from backend.core.database import get_session
+from backend.core.errors import ApiException
+from backend.infrastructure.repositories.auth_repository import AuthRepository
+
+
+class PermissionService:
+    def __init__(self):
+        self.settings = get_settings()
+
+    async def list_role_matrix(self) -> list[dict]:
+        async with get_session() as session:
+            repo = AuthRepository(session)
+            roles = await repo.list_discord_roles(guild_id=self.settings.DISCORD_GUILD_ID)
+            role_permission_pairs = await repo.list_role_permission_pairs()
+            permissions = await repo.list_permissions()
+
+        all_permission_keys = sorted({permission.key for permission in permissions})
+        permission_map: dict[int, set[str]] = {}
+        for role_id, permission_key in role_permission_pairs:
+            permission_map.setdefault(role_id, set()).add(permission_key)
+
+        result: list[dict] = []
+        for role in roles:
+            assigned = sorted(permission_map.get(role.discord_role_id, set()))
+            result.append(
+                {
+                    "discord_role_id": role.discord_role_id,
+                    "guild_id": role.guild_id,
+                    "name": role.name,
+                    "position": role.position,
+                    "is_active": role.is_active,
+                    "assigned_permissions": assigned,
+                    "available_permissions": all_permission_keys,
+                }
+            )
+        return result
+
+    async def update_role_permissions(
+        self,
+        *,
+        discord_role_id: int,
+        permission_keys: list[str],
+    ) -> dict:
+        normalized_keys = sorted(set(permission_keys))
+        async with get_session() as session:
+            repo = AuthRepository(session)
+            roles = await repo.list_discord_roles(guild_id=self.settings.DISCORD_GUILD_ID)
+            selected_role = next(
+                (role for role in roles if role.discord_role_id == discord_role_id),
+                None,
+            )
+            if selected_role is None:
+                raise ApiException(
+                    status_code=404,
+                    error_code="DISCORD_ROLE_NOT_FOUND",
+                    message=f"Discord role {discord_role_id} not found in cache",
+                )
+
+            existing_permission_keys = await repo.list_existing_permission_keys(normalized_keys)
+            missing = sorted(set(normalized_keys) - existing_permission_keys)
+            if missing:
+                raise ApiException(
+                    status_code=422,
+                    error_code="UNKNOWN_PERMISSION_KEYS",
+                    message="One or more permission keys are unknown",
+                    details={"unknown_permission_keys": missing},
+                )
+
+            await repo.replace_role_permissions(
+                discord_role_id=discord_role_id,
+                permission_keys=normalized_keys,
+            )
+            available_permissions = await repo.list_permissions()
+
+        return {
+            "discord_role_id": selected_role.discord_role_id,
+            "guild_id": selected_role.guild_id,
+            "name": selected_role.name,
+            "position": selected_role.position,
+            "is_active": selected_role.is_active,
+            "assigned_permissions": normalized_keys,
+            "available_permissions": sorted(
+                {permission.key for permission in available_permissions}
+            ),
+        }

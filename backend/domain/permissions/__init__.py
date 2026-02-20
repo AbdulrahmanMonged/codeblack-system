@@ -1,0 +1,11 @@
+from backend.domain.permissions.catalog import (
+    CRITICAL_CONFIG_KEYS,
+    INITIAL_MEMBER_PERMISSION_BUNDLE,
+    PERMISSION_CATALOG,
+)
+
+__all__ = [
+    "PERMISSION_CATALOG",
+    "INITIAL_MEMBER_PERMISSION_BUNDLE",
+    "CRITICAL_CONFIG_KEYS",
+]
