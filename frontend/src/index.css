@@ -1,0 +1,84 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --warning: oklch(82.03% 0.1388 57.21);
+  --warning-foreground: oklch(21.03% 0.0059 57.21);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  background: transparent;
+  color: var(--foreground);
+}
+
+.cb-title {
+  font-family: "Barlow Condensed", "Space Grotesk", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cb-overline {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.cb-feature-title {
+  font-family: "Barlow Condensed", "Space Grotesk", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.cb-grid-overlay {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent 80%);
+}
+
+.cb-sidebar {
+  box-shadow: 20px 0 45px rgba(0, 0, 0, 0.45);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cb-sidebar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.cb-feature-card {
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .cb-feature-title {
+    line-height: 1.05;
+  }
+}
