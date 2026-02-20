@@ -167,6 +167,20 @@
 - Migrated role matrix editor from checkbox list to HeroUI v3 multi-select in `frontend/src/features/permissions/pages/RoleMatrixPage.jsx`.
 - Verified frontend build with `npm --prefix frontend run build`.
 
+5. Completed `R4`:
+- Migrated remaining feature forms to HeroUI wrappers across:
+  - `frontend/src/features/admin/pages/ReviewQueuePage.jsx`
+  - `frontend/src/features/config-registry/pages/ConfigRegistryPage.jsx`
+  - `frontend/src/features/blacklist/pages/BlacklistManagementPage.jsx`
+  - `frontend/src/features/playerbase/pages/PlayerbasePage.jsx`
+- Global check confirms no remaining native `<input>`, `<select>`, or `<textarea>` controls under `frontend/src`.
+- Verified frontend build with `npm --prefix frontend run build`.
+
+6. `R5` verification sweep status:
+- Backend and bot syntax checks pass: `python3 -m compileall backend bot`.
+- Frontend production build passes: `npm --prefix frontend run build`.
+- Migration status commands are blocked in this recovered workspace because Alembic is not installed in the active Python environment (`alembic: not found`, `No module named alembic`).
+
 ## Remaining From This Plan
-1. Finish full HeroUI migration pass for remaining pages still using native controls.
-2. Run final reconciliation sweep (docs + QA matrix + migration/runtime checks).
+1. Run migration status checks (`alembic heads`, `alembic current`) from a Python environment where Alembic is installed and configured.
+2. Execute runtime smoke tests for backend API + Celery workers in the target deployment environment.

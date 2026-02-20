@@ -20,6 +20,9 @@ This file tracks what is still pending after the latest backend cutover pass.
 - [ ] Verify `venv/bin/alembic current` points to `b6e8dcb19a40` (current head).
 - [ ] Validate backend startup with `BACKEND_AUTO_CREATE_TABLES=false` in production.
 
+Local recovery note:
+- In the recovered local workspace used for reconstruction (`/home/bodyy/REDACTED-bot-recovered-20260220`), Alembic CLI/module is not installed in the active Python runtime, so `alembic heads/current` could not be executed locally.
+
 Acceptance:
 - Production schema matches migration head and backend runs without relying on runtime `create_all`.
 
