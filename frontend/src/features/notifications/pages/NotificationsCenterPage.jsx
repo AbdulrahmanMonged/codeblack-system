@@ -15,6 +15,7 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
@@ -256,7 +257,7 @@ export function NotificationsCenterPage() {
             <>
               <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
                 <label className="inline-flex items-center gap-2 text-sm text-white/80">
-                  <input
+                  <FormInput
                     type="checkbox"
                     checked={unreadOnly}
                     onChange={(event) => setUnreadOnly(event.target.checked)}
@@ -381,17 +382,17 @@ export function NotificationsCenterPage() {
                 <p className="cb-title text-xl">Broadcast Notification</p>
               </div>
               <form className="space-y-3" onSubmit={handleBroadcast}>
-                <input
+                <FormInput
                   name="eventType"
                   placeholder="event_type (e.g. roster.promoted)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="category"
                   placeholder="category (e.g. roster)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <select
+                <FormSelect
                   name="severity"
                   defaultValue="info"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
@@ -400,29 +401,29 @@ export function NotificationsCenterPage() {
                   <option value="success">success</option>
                   <option value="warning">warning</option>
                   <option value="critical">critical</option>
-                </select>
-                <input
+                </FormSelect>
+                <FormInput
                   name="title"
                   placeholder="Title"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <textarea
+                <FormTextarea
                   name="body"
                   rows={3}
                   placeholder="Body"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="entityType"
                   placeholder="entity_type (optional)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="entityPublicId"
                   placeholder="entity_public_id (optional)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <textarea
+                <FormTextarea
                   rows={4}
                   value={metadataRaw}
                   onChange={(event) => setMetadataRaw(event.target.value)}

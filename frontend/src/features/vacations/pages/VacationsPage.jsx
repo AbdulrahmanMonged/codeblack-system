@@ -19,6 +19,7 @@ import {
 } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import {
   approveVacation,
@@ -102,14 +103,13 @@ export function VacationsPage() {
     const leaveDate = String(form.get("leaveDate") || "").trim();
     const returnDate = String(form.get("expectedReturnDate") || "").trim();
     const payload = {
-      player_id: Number(form.get("playerId") || 0),
       leave_date: leaveDate,
       expected_return_date: returnDate,
       target_group: String(form.get("targetGroup") || "").trim() || null,
       reason: String(form.get("reason") || "").trim() || null,
     };
-    if (!Number.isFinite(payload.player_id) || payload.player_id <= 0 || !leaveDate || !returnDate) {
-      toast.error("Player ID, leave date, and return date are required");
+    if (!leaveDate || !returnDate) {
+      toast.error("Leave date and return date are required");
       return;
     }
     const durationDays = dayjs(returnDate).diff(dayjs(leaveDate), "day") + 1;
@@ -231,7 +231,7 @@ export function VacationsPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="flex flex-wrap items-center gap-3">
                 <label className="text-sm text-white/80">Status</label>
-                <select
+                <FormSelect
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
                   className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
@@ -242,9 +242,9 @@ export function VacationsPage() {
                   <option value="denied">denied</option>
                   <option value="returned">returned</option>
                   <option value="cancelled">cancelled</option>
-                </select>
+                </FormSelect>
                 <label className="text-sm text-white/80">Player ID</label>
-                <input
+                <FormInput
                   value={playerFilter}
                   onChange={(event) => setPlayerFilter(event.target.value)}
                   placeholder="filter by player id"
@@ -328,29 +328,22 @@ export function VacationsPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Submit Vacation Request</p>
               <form className="space-y-3" onSubmit={handleCreate}>
-                <input
-                  name="playerId"
-                  type="number"
-                  min={1}
-                  placeholder="Player ID"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <input
+                <FormInput
                   name="leaveDate"
                   type="date"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="expectedReturnDate"
                   type="date"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="targetGroup"
                   placeholder="Target group while away (optional)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <textarea
+                <FormTextarea
                   name="reason"
                   rows={3}
                   placeholder="Reason (optional)"
@@ -366,7 +359,7 @@ export function VacationsPage() {
           {selectedVacation && (canApprove || canDeny || canCancel) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Review Request {selectedVacation.public_id}</p>
-              <textarea
+              <FormTextarea
                 rows={3}
                 value={reviewComment}
                 onChange={(event) => setReviewComment(event.target.value)}
