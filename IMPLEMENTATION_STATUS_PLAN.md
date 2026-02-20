@@ -180,8 +180,14 @@
 - Backend and bot syntax checks pass: `python3 -m compileall backend bot`.
 - Frontend production build passes: `npm --prefix frontend run build`.
 - Alembic has been added to backend dependencies (`backend/requirements.txt`) to ensure migration tooling installs with backend environment setup.
-- Migration status commands are still blocked in the current shell runtime until dependencies are reinstalled (`alembic: not found`, `No module named alembic`).
+
+7. Additional migration reliability fixes:
+- Repaired missing Alembic revision chain by restoring placeholder revision `0e3a4ca576e6`.
+- Updated `migrations/env.py` to use backend DB settings directly and avoid bot runtime settings requirements during migration commands.
+- Updated `bot/__init__.py` to lazy-load runtime-heavy modules so tooling imports do not require optional bot runtime dependencies.
+- `alembic heads` now resolves successfully (`9c1a2e74e6b3`).
+- `alembic current` now reaches database connection stage and fails only when DB credentials are invalid in local env.
 
 ## Remaining From This Plan
-1. Run migration status checks (`alembic heads`, `alembic current`) from a Python environment where Alembic is installed and configured.
+1. Run `alembic current` against the target database with valid credentials.
 2. Execute runtime smoke tests for backend API + Celery workers in the target deployment environment.

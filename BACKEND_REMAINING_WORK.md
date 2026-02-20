@@ -22,7 +22,8 @@ This file tracks what is still pending after the latest backend cutover pass.
 
 Local recovery note:
 - Alembic dependency is now included in `backend/requirements.txt`.
-- In the recovered local workspace used for reconstruction (`/home/bodyy/codeblack-bot-recovered-20260220`), dependencies still need reinstall in the active Python runtime before running `alembic heads/current`.
+- In the recovered local workspace used for reconstruction (`/home/bodyy/codeblack-bot-recovered-20260220`), Alembic graph resolution is fixed (`alembic heads` works).
+- `alembic current` requires valid database credentials; local `.env` currently points to a PostgreSQL user/password that is not accepted by the running DB.
 
 Acceptance:
 - Production schema matches migration head and backend runs without relying on runtime `create_all`.
