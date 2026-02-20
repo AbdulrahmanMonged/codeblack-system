@@ -115,7 +115,6 @@ export function ActivitiesPage() {
     const form = new FormData(formElement);
     const createScheduledFor = String(form.get("scheduledFor") || "").trim();
     const payload = {
-      group_code: String(form.get("groupCode") || "").trim(),
       activity_type: String(form.get("activityType") || "").trim(),
       title: String(form.get("title") || "").trim(),
       duration_minutes: Number(form.get("durationMinutes") || 0),
@@ -125,13 +124,12 @@ export function ActivitiesPage() {
         : null,
     };
     if (
-      !payload.group_code ||
       !payload.activity_type ||
       !payload.title ||
       !Number.isFinite(payload.duration_minutes) ||
       payload.duration_minutes <= 0
     ) {
-      toast.error("Group, type, title, and valid duration are required");
+      toast.error("Type, title, and valid duration are required");
       return;
     }
     try {
@@ -284,7 +282,7 @@ export function ActivitiesPage() {
                         </Chip>
                       </div>
                       <p className="mt-1 text-xs text-white/65">
-                        {activity.activity_type} · {activity.duration_minutes}m · group #{activity.group_id}
+                        {activity.activity_type} · {activity.duration_minutes}m
                       </p>
                       <p className="mt-1 text-xs text-white/70 line-clamp-2">{activity.notes || "No notes"}</p>
                       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] uppercase tracking-[0.16em] text-white/45">
@@ -329,11 +327,6 @@ export function ActivitiesPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Create Activity</p>
               <form className="space-y-3" onSubmit={handleCreate}>
-                <input
-                  name="groupCode"
-                  placeholder="Group code (e.g. CODEBLACK)"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
                 <input
                   name="activityType"
                   placeholder="Type (patrol/training/event)"
