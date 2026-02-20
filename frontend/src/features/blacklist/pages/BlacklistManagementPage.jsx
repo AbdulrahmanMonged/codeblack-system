@@ -9,6 +9,7 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
+import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import {
   createBlacklistEntry,
   listBlacklistEntries,
@@ -180,7 +181,7 @@ export function BlacklistManagementPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="flex flex-wrap items-center gap-3">
                 <label className="text-sm text-white/80">Status filter</label>
-                <select
+                <FormSelect
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
                   className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
@@ -188,7 +189,7 @@ export function BlacklistManagementPage() {
                   <option value="">All</option>
                   <option value="active">active</option>
                   <option value="removed">removed</option>
-                </select>
+                </FormSelect>
               </div>
             </Card>
           ) : null}
@@ -272,14 +273,14 @@ export function BlacklistManagementPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Add Blacklist Entry</p>
               <form className="space-y-3" onSubmit={handleCreateEntry}>
-                <input
+                <FormInput
                   name="playerId"
                   type="number"
                   min={1}
                   placeholder="Player ID (optional)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="level"
                   type="number"
                   min={1}
@@ -288,28 +289,28 @@ export function BlacklistManagementPage() {
                   placeholder="Blacklist level"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="alias"
                   placeholder="Alias (in-game name)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="identity"
                   placeholder="Identity (account name)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="serial"
                   placeholder="Serial"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="roots"
                   maxLength={2}
                   placeholder="Roots country code"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white uppercase"
                 />
-                <textarea
+                <FormTextarea
                   name="remarks"
                   rows={3}
                   placeholder="Remarks / reason"
@@ -326,7 +327,7 @@ export function BlacklistManagementPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Update Entry #{selectedEntry.blacklist_player_id}</p>
               <div className="space-y-3">
-                <input
+                <FormInput
                   type="number"
                   min={1}
                   max={99}
@@ -334,26 +335,26 @@ export function BlacklistManagementPage() {
                   onChange={(event) => setUpdateLevel(event.target.value)}
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   value={updateAlias}
                   onChange={(event) => setUpdateAlias(event.target.value)}
                   placeholder="Alias"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   value={updateSerial}
                   onChange={(event) => setUpdateSerial(event.target.value)}
                   placeholder="Serial"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   maxLength={2}
                   value={updateRoots}
                   onChange={(event) => setUpdateRoots(event.target.value)}
                   placeholder="Roots"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white uppercase"
                 />
-                <textarea
+                <FormTextarea
                   rows={3}
                   value={updateRemarks}
                   onChange={(event) => setUpdateRemarks(event.target.value)}
@@ -370,7 +371,7 @@ export function BlacklistManagementPage() {
           {selectedEntry && canRemove ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Remove Entry</p>
-              <textarea
+              <FormTextarea
                 rows={3}
                 value={removalReason}
                 onChange={(event) => setRemovalReason(event.target.value)}
