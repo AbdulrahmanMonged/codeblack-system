@@ -1,0 +1,74 @@
+
+<!doctype html>
+<html lang="en" data-theme="dark" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/main/logo-on-hand.png" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#101419" />
+    <meta name="csrf-token" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="CodeBlack Operations Center frontend powered by HeroUI v3."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+    />
+    <script>
+      (() => {
+        const KEY = "codeblack-ui-theme";
+        const LIGHT = "light";
+        const DARK = "dark";
+
+        const getStoredTheme = () => {
+          try {
+            return window.localStorage.getItem(KEY);
+          } catch {
+            return null;
+          }
+        };
+
+        const resolveTheme = () => {
+          const stored = getStoredTheme();
+          if (stored === LIGHT || stored === DARK) {
+            return stored;
+          }
+          return window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? DARK
+            : LIGHT;
+        };
+
+        const applyTheme = (theme) => {
+          const root = document.documentElement;
+          root.setAttribute("data-theme", theme);
+          root.classList.remove(LIGHT, DARK);
+          root.classList.add(theme);
+          root.style.colorScheme = theme;
+
+          const themeMeta = document.querySelector('meta[name="theme-color"]');
+          if (themeMeta) {
+            themeMeta.setAttribute("content", theme === DARK ? "#101419" : "#f5f4ef");
+          }
+        };
+
+        applyTheme(resolveTheme());
+      })();
+    </script>
+    <title>CodeBlack Frontend</title>
+  </head>
+  <body>
+    <noscript>
+      <div
+        style="padding: 16px; font-family: system-ui, sans-serif; color: #ffffff; background: #0f1117;"
+      >
+        This app requires JavaScript to run.
+      </div>
+    </noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
