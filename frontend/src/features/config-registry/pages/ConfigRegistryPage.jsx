@@ -20,6 +20,7 @@ import {
 } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
@@ -247,7 +248,7 @@ export function ConfigRegistryPage() {
               <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
                 <div className="flex flex-wrap items-center gap-3">
                   <label className="inline-flex items-center gap-2 text-sm text-white/80">
-                    <input
+                    <FormInput
                       type="checkbox"
                       checked={includeSensitive}
                       disabled={!isOwner}
@@ -395,20 +396,20 @@ export function ConfigRegistryPage() {
                 <p className="cb-title text-xl">Editor</p>
               </div>
               <div className="space-y-3">
-                <input
+                <FormInput
                   value={editorKey}
                   onChange={(event) => setEditorKey(event.target.value)}
                   placeholder="Config key (e.g. vacations.max_duration_days)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <textarea
+                <FormTextarea
                   rows={7}
                   value={editorValueRaw}
                   onChange={(event) => setEditorValueRaw(event.target.value)}
                   placeholder="JSON value"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 font-mono text-xs text-white"
                 />
-                <input
+                <FormInput
                   type="number"
                   min={1}
                   value={editorSchemaVersion}
@@ -416,14 +417,14 @@ export function ConfigRegistryPage() {
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
                 <label className="inline-flex items-center gap-2 text-sm text-white/80">
-                  <input
+                  <FormInput
                     type="checkbox"
                     checked={editorIsSensitive}
                     onChange={(event) => setEditorIsSensitive(event.target.checked)}
                   />
                   Mark value as sensitive
                 </label>
-                <textarea
+                <FormTextarea
                   rows={2}
                   value={editorReason}
                   onChange={(event) => setEditorReason(event.target.value)}
@@ -458,7 +459,7 @@ export function ConfigRegistryPage() {
           {canApprove ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Approval Note</p>
-              <textarea
+              <FormTextarea
                 rows={3}
                 value={approvalReason}
                 onChange={(event) => setApprovalReason(event.target.value)}
@@ -471,7 +472,7 @@ export function ConfigRegistryPage() {
           {canRollback ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Rollback Note</p>
-              <textarea
+              <FormTextarea
                 rows={3}
                 value={rollbackReason}
                 onChange={(event) => setRollbackReason(event.target.value)}
