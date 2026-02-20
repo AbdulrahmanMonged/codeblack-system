@@ -186,8 +186,7 @@
 - Updated `migrations/env.py` to use backend DB settings directly and avoid bot runtime settings requirements during migration commands.
 - Updated `bot/__init__.py` to lazy-load runtime-heavy modules so tooling imports do not require optional bot runtime dependencies.
 - `alembic heads` now resolves successfully (`9c1a2e74e6b3`).
-- `alembic current` now reaches database connection stage and fails only when DB credentials are invalid in local env.
+- `alembic current` and `alembic upgrade head` both execute successfully when valid DB credentials are provided.
 
 ## Remaining From This Plan
-1. Run `alembic current` against the target database with valid credentials.
-2. Execute runtime smoke tests for backend API + Celery workers in the target deployment environment.
+1. Execute runtime smoke tests for backend API + Celery workers in the target deployment environment.
