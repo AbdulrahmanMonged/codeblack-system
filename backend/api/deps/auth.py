@@ -15,17 +15,33 @@ from backend.infrastructure.repositories.blacklist_repository import BlacklistRe
 from backend.infrastructure.repositories.order_repository import OrderRepository
 
 bearer_scheme = HTTPBearer(auto_error=False)
+VERIFICATION_BYPASS_PERMISSION_KEYS = frozenset(
+    {
+        "verification_requests.create",
+        "verification_requests.read_own",
+        "blacklist_removal_requests.create",
+    }
+)
 
 
 async def get_optional_principal(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> AuthenticatedPrincipal | None:
-    if credentials is None:
-        return None
-    token = credentials.credentials
+    token = ""
+    if credentials is not None and credentials.credentials:
+        token = credentials.credentials.strip()
+
+    if not token:
+        cookie_name = get_settings().BACKEND_AUTH_COOKIE_NAME
+        cookie_token = request.cookies.get(cookie_name, "").strip()
+        if cookie_token.lower().startswith("bearer "):
+            cookie_token = cookie_token[7:].strip()
+        token = cookie_token
+
     if not token:
         return None
+
     service = AuthService()
     principal = await service.get_principal_from_access_token(token)
     request.state.authenticated_principal = principal
@@ -61,6 +77,14 @@ def require_permissions(*permission_keys: str) -> Callable[[AuthenticatedPrincip
         if principal.is_owner:
             return principal
 
+        if required and not set(required).intersection(VERIFICATION_BYPASS_PERMISSION_KEYS):
+            if not principal.is_verified:
+                raise ApiException(
+                    status_code=403,
+                    error_code="VERIFICATION_REQUIRED",
+                    message="Account verification is required for this action",
+                )
+
         if "blacklist_removal_requests.create" not in required:
             if await _is_principal_blacklisted(principal):
                 raise ApiException(
@@ -90,6 +114,9 @@ def require_any_permissions(
     async def _dependency(
         principal: AuthenticatedPrincipal = Depends(get_current_principal),
     ) -> AuthenticatedPrincipal:
+        if get_settings().dev_unlock_enabled:
+            return principal
+
         if principal.is_owner:
             return principal
 
