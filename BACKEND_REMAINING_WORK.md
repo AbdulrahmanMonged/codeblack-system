@@ -21,7 +21,8 @@ This file tracks what is still pending after the latest backend cutover pass.
 - [ ] Validate backend startup with `BACKEND_AUTO_CREATE_TABLES=false` in production.
 
 Local recovery note:
-- In the recovered local workspace used for reconstruction (`/home/bodyy/codeblack-bot-recovered-20260220`), Alembic CLI/module is not installed in the active Python runtime, so `alembic heads/current` could not be executed locally.
+- Alembic dependency is now included in `backend/requirements.txt`.
+- In the recovered local workspace used for reconstruction (`/home/bodyy/codeblack-bot-recovered-20260220`), dependencies still need reinstall in the active Python runtime before running `alembic heads/current`.
 
 Acceptance:
 - Production schema matches migration head and backend runs without relying on runtime `create_all`.
