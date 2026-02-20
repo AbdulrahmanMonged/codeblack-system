@@ -179,7 +179,8 @@
 6. `R5` verification sweep status:
 - Backend and bot syntax checks pass: `python3 -m compileall backend bot`.
 - Frontend production build passes: `npm --prefix frontend run build`.
-- Migration status commands are blocked in this recovered workspace because Alembic is not installed in the active Python environment (`alembic: not found`, `No module named alembic`).
+- Alembic has been added to backend dependencies (`backend/requirements.txt`) to ensure migration tooling installs with backend environment setup.
+- Migration status commands are still blocked in the current shell runtime until dependencies are reinstalled (`alembic: not found`, `No module named alembic`).
 
 ## Remaining From This Plan
 1. Run migration status checks (`alembic heads`, `alembic current`) from a Python environment where Alembic is installed and configured.
