@@ -18,6 +18,7 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import {
   approveActivity,
@@ -226,7 +227,7 @@ export function ActivitiesPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="flex flex-wrap items-center gap-3">
                 <label className="text-sm text-white/80">Status</label>
-                <select
+                <FormSelect
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
                   className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
@@ -238,9 +239,9 @@ export function ActivitiesPage() {
                   <option value="rejected">rejected</option>
                   <option value="posted">posted</option>
                   <option value="publish_failed">publish_failed</option>
-                </select>
+                </FormSelect>
                 <label className="text-sm text-white/80">Type</label>
-                <input
+                <FormInput
                   value={typeFilter}
                   onChange={(event) => setTypeFilter(event.target.value)}
                   placeholder="patrol / training / event"
@@ -327,17 +328,17 @@ export function ActivitiesPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Create Activity</p>
               <form className="space-y-3" onSubmit={handleCreate}>
-                <input
+                <FormInput
                   name="activityType"
                   placeholder="Type (patrol/training/event)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="title"
                   placeholder="Title"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="durationMinutes"
                   type="number"
                   min={1}
@@ -345,12 +346,12 @@ export function ActivitiesPage() {
                   placeholder="Duration minutes"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="scheduledFor"
                   type="datetime-local"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <textarea
+                <FormTextarea
                   name="notes"
                   rows={3}
                   placeholder="Notes"
@@ -366,14 +367,14 @@ export function ActivitiesPage() {
           {selectedActivity && (canApprove || canReject) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Review Activity {selectedActivity.public_id}</p>
-              <textarea
+              <FormTextarea
                 rows={3}
                 value={reviewComment}
                 onChange={(event) => setReviewComment(event.target.value)}
                 placeholder="Review comment"
                 className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
               />
-              <input
+              <FormInput
                 type="datetime-local"
                 value={scheduledFor}
                 onChange={(event) => setScheduledFor(event.target.value)}
@@ -407,14 +408,14 @@ export function ActivitiesPage() {
           {selectedActivity && canPublish ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Publish to Forum</p>
-              <input
+              <FormInput
                 value={forumTopicId}
                 onChange={(event) => setForumTopicId(event.target.value)}
                 placeholder="Forum topic ID (optional if already set)"
                 className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
               />
               <label className="mt-3 inline-flex items-center gap-2 text-sm text-white/80">
-                <input
+                <FormInput
                   type="checkbox"
                   checked={forceRetry}
                   onChange={(event) => setForceRetry(event.target.checked)}
