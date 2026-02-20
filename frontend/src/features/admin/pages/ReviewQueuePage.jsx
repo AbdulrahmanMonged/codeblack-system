@@ -527,7 +527,7 @@ export function ReviewQueuePage() {
           isConfigChange) && (
           <div className="space-y-1">
             <label className="text-sm text-white/80">Review comment / reason</label>
-            <textarea
+            <FormTextarea
               rows={4}
               value={decisionReason}
               onChange={(event) => setDecisionReason(event.target.value)}
@@ -541,7 +541,7 @@ export function ReviewQueuePage() {
           <div className="space-y-3 rounded-xl border border-white/10 bg-black/40 p-3">
             <p className="text-sm text-white/70">Decline policy controls</p>
             <div className="grid gap-3 md:grid-cols-2">
-              <select
+              <FormSelect
                 value={reapplyPolicy}
                 onChange={(event) => setReapplyPolicy(event.target.value)}
                 className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white"
@@ -549,8 +549,8 @@ export function ReviewQueuePage() {
                 <option value="allow_immediate">Allow immediate</option>
                 <option value="cooldown">Cooldown</option>
                 <option value="permanent_block">Permanent block</option>
-              </select>
-              <input
+              </FormSelect>
+              <FormInput
                 type="number"
                 min={1}
                 max={365}
@@ -567,7 +567,7 @@ export function ReviewQueuePage() {
         {isActivity ? (
           <div className="space-y-1">
             <label className="text-sm text-white/80">Schedule time for approval (optional)</label>
-            <input
+            <FormInput
               type="datetime-local"
               value={scheduledFor}
               onChange={(event) => setScheduledFor(event.target.value)}
@@ -769,7 +769,7 @@ export function ReviewQueuePage() {
                   size={14}
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/50"
                 />
-                <input
+                <FormInput
                   type="text"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
@@ -782,7 +782,7 @@ export function ReviewQueuePage() {
                   className="w-full rounded-xl border border-white/15 bg-black/40 py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-amber-300/60"
                 />
               </div>
-              <select
+              <FormSelect
                 value={status}
                 onChange={(event) => setStatus(event.target.value)}
                 className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
@@ -796,7 +796,7 @@ export function ReviewQueuePage() {
                 <option value="denied">denied</option>
                 <option value="rejected">rejected</option>
                 <option value="pending_approval">pending_approval</option>
-              </select>
+              </FormSelect>
               <Button type="button" variant="ghost" onPress={() => setSearch(searchInput.trim())}>
                 Apply
               </Button>
@@ -818,7 +818,7 @@ export function ReviewQueuePage() {
                 );
               })}
               <label className="ml-auto inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/80">
-                <input
+                <FormInput
                   type="checkbox"
                   checked={pendingOnly}
                   onChange={(event) => setPendingOnly(event.target.checked)}
