@@ -54,9 +54,7 @@ This directory contains the FastAPI backend scaffold aligned with `BACKEND_PLAN.
   - `GET /api/v1/roster`
   - `POST /api/v1/roster`
   - `PATCH /api/v1/roster/{membership_id}`
-  - `GET /api/v1/roster/groups`
-  - `POST /api/v1/roster/groups`
-  - `GET /api/v1/roster/ranks/{group_code}`
+  - `GET /api/v1/roster/ranks`
   - `POST /api/v1/roster/ranks`
   - `POST /api/v1/playerbase`
   - `GET /api/v1/playerbase`
