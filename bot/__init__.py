@@ -9,23 +9,11 @@ Initializes the bot with all infrastructure:
 - IPC manager (Redis Streams + Pub/Sub for FastAPI)
 """
 
-import logging
 import asyncio
+import logging
 from typing import TYPE_CHECKING
 
-from .config import get_settings
-from .core.database import DatabaseManager
-from .core.ipc import IPCManager
-from .core.ipc_command_handler import IPCCommandHandler
-from .core.redis import RedisManager
-from .cloudflare.http_client import HttpClient
-from .cloudflare.session_manager import SessionManager
 from .logger import CustomFormatter
-from .services.activity_service import ActivityService
-from .services.event_service import EventService
-from .services.forum_service import ForumService
-from .services.player_service import PlayerService
-from .services.scraper_service import ScraperService
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +24,21 @@ if TYPE_CHECKING:
 def create_bot() -> "discord.Bot":
     """Create and configure the Discord bot instance."""
     import discord
+
+    # Import runtime-heavy modules lazily so importing `bot` for tooling
+    # (e.g. Alembic env) doesn't require optional runtime dependencies.
+    from .cloudflare.http_client import HttpClient
+    from .cloudflare.session_manager import SessionManager
+    from .config import get_settings
+    from .core.database import DatabaseManager
+    from .core.ipc import IPCManager
+    from .core.ipc_command_handler import IPCCommandHandler
+    from .core.redis import RedisManager
+    from .services.activity_service import ActivityService
+    from .services.event_service import EventService
+    from .services.forum_service import ForumService
+    from .services.player_service import PlayerService
+    from .services.scraper_service import ScraperService
 
     intents = discord.Intents.default()
     intents.message_content = True
@@ -53,7 +56,6 @@ def create_bot() -> "discord.Bot":
     async def on_connect():
         logger.info("Connected to Discord")
         settings = get_settings()
-        settings = get_settings()
 
         # Initialize Redis
         await RedisManager.initialize()
@@ -67,9 +69,6 @@ def create_bot() -> "discord.Bot":
         session_mgr = SessionManager()
         session_mgr.set_redis(RedisManager)
         http_client = HttpClient(session_mgr)
-        if settings.CF_PROXY:
-            http_client.set_proxy(settings.CF_PROXY)
-            logger.info("HTTP client proxy configured for Cloudflare-protected requests")
         if settings.CF_PROXY:
             http_client.set_proxy(settings.CF_PROXY)
             logger.info("HTTP client proxy configured for Cloudflare-protected requests")

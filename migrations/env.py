@@ -6,8 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-# Existing bot settings/models (legacy schema currently in production)
-from bot.config import get_settings as get_bot_settings
+# Existing bot models (legacy schema currently in production)
 from bot.models.base import Base as BotBase
 
 # Import all models so they register with Base.metadata
@@ -25,10 +24,9 @@ if config.config_file_name is not None:
 
 target_metadata = [BotBase.metadata, BackendBase.metadata]
 
-# Override sqlalchemy.url with our Settings
+# Override sqlalchemy.url with backend settings.
 backend_settings = get_backend_settings()
-bot_settings = get_bot_settings()
-database_url = backend_settings.database_url or bot_settings.DATABASE_URL
+database_url = backend_settings.database_url
 config.set_main_option("sqlalchemy.url", database_url)
 
 
