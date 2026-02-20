@@ -16,6 +16,7 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
+import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import {
   createPlayer,
@@ -226,7 +227,7 @@ export function PlayerbasePage() {
                   size={14}
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
                 />
-                <input
+                <FormInput
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search by ID, in-game, account, serial..."
@@ -309,22 +310,22 @@ export function PlayerbasePage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Create Player</p>
               <form className="space-y-3" onSubmit={handleCreatePlayer}>
-                <input
+                <FormInput
                   name="ingameName"
                   placeholder="In-game name"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="accountName"
                   placeholder="Account name"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="serial"
                   placeholder="MTA serial (optional)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="countryCode"
                   maxLength={2}
                   placeholder="Country code (e.g. EG)"
@@ -411,12 +412,12 @@ export function PlayerbasePage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Create Punishment</p>
               <form className="space-y-3" onSubmit={handleCreatePunishment}>
-                <input
+                <FormInput
                   name="punishmentType"
                   placeholder="Type (e.g. warn, suspension)"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="severity"
                   type="number"
                   min={1}
@@ -424,13 +425,13 @@ export function PlayerbasePage() {
                   defaultValue={1}
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <textarea
+                <FormTextarea
                   name="reason"
                   rows={3}
                   placeholder="Reason"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
-                <input
+                <FormInput
                   name="expiresAt"
                   type="datetime-local"
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
@@ -446,7 +447,7 @@ export function PlayerbasePage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Update Punishment #{selectedPunishment.id}</p>
               <div className="space-y-3">
-                <select
+                <FormSelect
                   value={punishmentStatus}
                   onChange={(event) => setPunishmentStatus(event.target.value)}
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
@@ -454,8 +455,8 @@ export function PlayerbasePage() {
                   <option value="active">active</option>
                   <option value="expired">expired</option>
                   <option value="revoked">revoked</option>
-                </select>
-                <input
+                </FormSelect>
+                <FormInput
                   type="datetime-local"
                   value={punishmentExpiresAt}
                   onChange={(event) => setPunishmentExpiresAt(event.target.value)}
