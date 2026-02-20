@@ -15,6 +15,7 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
@@ -249,17 +250,17 @@ export function BotControlPage() {
                   {CHANNEL_KEYS.map((key) => (
                     <div key={key} className="space-y-1">
                       <label className="text-xs uppercase tracking-[0.14em] text-white/55">{key}</label>
-                      <input
+                      <FormInput
                         value={resolveChannelDraftValue(key)}
                         onChange={(event) =>
                           setChannelsDraft((previous) => ({
                             ...previous,
-                            [key]: event.target.value,
+                            [key]: event?.target?.value || "",
                           }))
                         }
-                        disabled={!canConfigureChannels}
+                        isDisabled={!canConfigureChannels}
                         placeholder="Discord channel id or blank"
-                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                        className="w-full"
                       />
                     </div>
                   ))}
@@ -281,23 +282,23 @@ export function BotControlPage() {
                 {featuresLoading ? <LoadingBlock label="Loading feature toggles..." /> : null}
                 <div className="space-y-2">
                   {FEATURE_KEYS.map((key) => (
-                    <label
+                    <div
                       key={key}
                       className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/85"
                     >
                       <span>{key}</span>
-                      <input
+                      <FormInput
                         type="checkbox"
                         checked={resolveFeatureDraftValue(key)}
                         disabled={!canToggleFeatures}
                         onChange={(event) =>
                           setFeaturesDraft((previous) => ({
                             ...previous,
-                            [key]: event.target.checked,
+                            [key]: Boolean(event?.target?.checked),
                           }))
                         }
                       />
-                    </label>
+                    </div>
                   ))}
                 </div>
                 {canToggleFeatures ? (
