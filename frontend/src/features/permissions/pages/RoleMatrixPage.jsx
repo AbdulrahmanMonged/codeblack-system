@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Label, ListBox, Select } from "@heroui/react";
 import { CheckCheck, RefreshCw, Save, Search, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -7,10 +7,27 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import { listRoleMatrix, updateRoleMatrix } from "../api/permissions-api.js";
+
+function normalizeSelectionToArray(selection, fallback = []) {
+  if (selection === "all") {
+    return [...new Set(fallback.map((item) => String(item).trim()).filter(Boolean))].sort();
+  }
+  if (selection instanceof Set) {
+    return [...new Set([...selection].map((item) => String(item).trim()).filter(Boolean))].sort();
+  }
+  if (Array.isArray(selection)) {
+    return [...new Set(selection.map((item) => String(item).trim()).filter(Boolean))].sort();
+  }
+  if (selection === null || selection === undefined) {
+    return [];
+  }
+  return [String(selection).trim()].filter(Boolean);
+}
 
 export function RoleMatrixPage() {
   const permissions = useAppSelector(selectPermissions);
@@ -56,16 +73,17 @@ export function RoleMatrixPage() {
   }
 
   function ensureDraftInitialized(role) {
-    const assigned = [...(role?.assigned_permissions || [])].sort();
+    const assigned = [...(role?.assigned_permissions || [])].map((item) => String(item)).sort();
     setDraftPermissions(assigned);
   }
 
-  function togglePermission(permissionKey) {
+  function handlePermissionSelectionChange(selectionKeys) {
+    const visibleSelection = normalizeSelectionToArray(selectionKeys, filteredPermissions);
     setDraftPermissions((previous) => {
-      if (previous.includes(permissionKey)) {
-        return previous.filter((item) => item !== permissionKey);
-      }
-      return [...previous, permissionKey].sort();
+      const hiddenSelection = previous.filter(
+        (permissionKey) => !filteredPermissions.includes(permissionKey),
+      );
+      return [...new Set([...hiddenSelection, ...visibleSelection])].sort();
     });
   }
 
@@ -179,42 +197,53 @@ export function RoleMatrixPage() {
                 </Chip>
               </div>
 
-              <div className="relative mb-3">
-                <Search
-                  size={14}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
-                />
-                <input
+              <div className="mb-3">
+                <FormInput
                   value={permissionSearch}
-                  onChange={(event) => setPermissionSearch(event.target.value)}
+                  onChange={(event) => setPermissionSearch(String(event?.target?.value || ""))}
                   placeholder="Filter permission keys..."
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-9 py-2.5 text-sm text-white outline-none focus:border-amber-300/60"
+                  startContent={<Search size={14} className="text-white/45" />}
+                  className="w-full"
                 />
               </div>
 
-              <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
-                {filteredPermissions.map((permissionKey) => {
-                  const checked = draftPermissions.includes(permissionKey);
-                  return (
-                    <label
-                      key={permissionKey}
-                      className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 hover:bg-white/10"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={!canWrite}
-                        onChange={() => togglePermission(permissionKey)}
-                      />
-                      <span className="text-sm text-white/85">{permissionKey}</span>
-                    </label>
-                  );
-                })}
+              <div className="rounded-xl border border-white/10 bg-black/35 p-3">
+                <Select
+                  className="w-full"
+                  placeholder="Select permissions"
+                  selectionMode="multiple"
+                  selectedKeys={new Set(draftPermissions)}
+                  isDisabled={!canWrite || !filteredPermissions.length}
+                  onSelectionChange={handlePermissionSelectionChange}
+                >
+                  <Label>Permissions</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox selectionMode="multiple">
+                      {filteredPermissions.map((permissionKey) => (
+                        <ListBox.Item
+                          key={permissionKey}
+                          id={permissionKey}
+                          textValue={permissionKey}
+                        >
+                          {permissionKey}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+
                 {filteredPermissions.length === 0 ? (
-                  <EmptyBlock
-                    title="No permissions matched"
-                    description="Try clearing the filter to see all available permissions."
-                  />
+                  <div className="mt-3">
+                    <EmptyBlock
+                      title="No permissions matched"
+                      description="Try clearing the filter to see all available permissions."
+                    />
+                  </div>
                 ) : null}
               </div>
 
