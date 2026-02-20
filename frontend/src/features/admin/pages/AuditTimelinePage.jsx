@@ -7,6 +7,7 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { getAuditTimeline } from "../api/admin-api.js";
@@ -101,23 +102,18 @@ export function AuditTimelinePage() {
 
       <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <div className="relative">
-            <Search
-              size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
-            />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search event type, entity, summary..."
-              className="w-full rounded-xl border border-white/15 bg-black/40 px-9 py-2.5 text-sm text-white outline-none focus:border-amber-300/60"
-            />
-          </div>
-          <input
+          <FormInput
+            value={search}
+            onChange={(event) => setSearch(String(event?.target?.value || ""))}
+            placeholder="Search event type, entity, summary..."
+            startContent={<Search size={14} className="text-white/40" />}
+            className="w-full"
+          />
+          <FormInput
             value={actorUserId}
-            onChange={(event) => setActorUserId(event.target.value)}
+            onChange={(event) => setActorUserId(String(event?.target?.value || ""))}
             placeholder="Actor user id"
-            className="rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/60"
+            className="w-full"
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-2">

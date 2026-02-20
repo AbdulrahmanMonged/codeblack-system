@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
-import { CheckCircle2, Link2, ShieldAlert, Upload, UploadCloud } from "lucide-react";
+import { CheckCircle2, Link2, ShieldAlert, UploadCloud } from "lucide-react";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import {
 } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorCode, extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { formatBytes } from "../../../shared/utils/formatting.js";
 import { getAccountLinkByUserId, submitOrder } from "../api/orders-api.js";
@@ -188,10 +189,10 @@ export function OrderSubmitPage() {
           <form className="space-y-4" onSubmit={onSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1">
-                <label className="text-sm text-white/80">In-game name</label>
-                <input
+                <FormInput
                   type="text"
-                  className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/60"
+                  label="In-game name"
+                  className="w-full"
                   {...register("ingameName")}
                 />
                 {errors.ingameName ? (
@@ -200,11 +201,11 @@ export function OrderSubmitPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm text-white/80">Completed orders</label>
-                <input
+                <FormInput
                   type="text"
-                  className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/60"
+                  label="Completed orders"
                   placeholder="Order IDs or summary"
+                  className="w-full"
                   {...register("completedOrders")}
                 />
                 <div className="flex items-center justify-between">
@@ -219,14 +220,11 @@ export function OrderSubmitPage() {
             </div>
 
             <div className="space-y-1 rounded-xl border border-white/10 bg-white/5 p-3">
-              <label className="text-sm text-white/80">Proof image (required)</label>
-              <input
+              <FormInput
                 type="file"
+                label="Proof image (required)"
                 accept="image/png,image/jpeg,image/webp"
-                className={[
-                  "w-full rounded-xl border bg-white/5 px-3 py-2.5 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber-300/20 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-amber-100 hover:file:bg-amber-300/30 focus:outline-none",
-                  proofError ? "border-rose-300/45" : "border-white/15",
-                ].join(" ")}
+                className="w-full"
                 {...proofRegister}
               />
               {proofError ? <p className="text-xs text-rose-200">{proofError}</p> : null}

@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
+import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { checkApplicationEligibility } from "../api/applications-api.js";
 
 const eligibilitySchema = z.object({
@@ -70,15 +71,13 @@ export function ApplicationEligibilityPage() {
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-1">
-              <label htmlFor="accountName" className="text-sm text-white/80">
-                Account Name
-              </label>
-              <input
+              <FormInput
                 id="accountName"
                 type="text"
                 autoComplete="off"
+                label="Account Name"
                 placeholder="moamen54"
-                className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none transition focus:border-amber-300/60 focus:bg-white/10"
+                className="w-full"
                 {...register("accountName")}
               />
               {errors.accountName ? (
