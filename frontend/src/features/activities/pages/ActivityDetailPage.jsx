@@ -16,6 +16,7 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
+import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import {
   addActivityParticipant,
@@ -228,14 +229,14 @@ export function ActivityDetailPage() {
       {(canApprove || canReject) && publicId ? (
         <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
           <p className="mb-3 cb-title text-xl">Review Actions</p>
-          <textarea
+          <FormTextarea
             rows={3}
             value={reviewComment}
             onChange={(event) => setReviewComment(event.target.value)}
             placeholder="Review comment"
             className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
           />
-          <input
+          <FormInput
             type="datetime-local"
             value={scheduledFor}
             onChange={(event) => setScheduledFor(event.target.value)}
@@ -269,14 +270,14 @@ export function ActivityDetailPage() {
       {canPublish && publicId ? (
         <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
           <p className="mb-3 cb-title text-xl">Publish Actions</p>
-          <input
+          <FormInput
             value={forumTopicId}
             onChange={(event) => setForumTopicId(event.target.value)}
             placeholder="Forum topic ID (optional)"
             className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
           />
           <label className="mt-3 inline-flex items-center gap-2 text-sm text-white/80">
-            <input
+            <FormInput
               type="checkbox"
               checked={forceRetry}
               onChange={(event) => setForceRetry(event.target.checked)}
@@ -312,26 +313,26 @@ export function ActivityDetailPage() {
             </div>
           ) : null}
           <form className="space-y-3" onSubmit={handleAddParticipant}>
-            <input
+            <FormInput
               name="playerId"
               type="number"
               min={1}
               placeholder="Player ID"
               className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
             />
-            <input
+            <FormInput
               name="participantRole"
               placeholder="participant role (participant/leader)"
               defaultValue="participant"
               className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
             />
-            <input
+            <FormInput
               name="attendanceStatus"
               placeholder="attendance status (planned/attended)"
               defaultValue="planned"
               className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
             />
-            <textarea
+            <FormTextarea
               name="notes"
               rows={2}
               placeholder="Notes"
