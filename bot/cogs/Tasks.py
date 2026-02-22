@@ -63,12 +63,38 @@ class Tasks(commands.Cog):
                 return
 
             image_binary = generate_cop_live_scores_image(scores)
+            stored_msg_id = await RedisManager.get(redis_key)
 
-            deleted_count = await self._clear_channel_messages(channel)
-            if deleted_count:
+            if stored_msg_id:
+                try:
+                    message = await channel.fetch_message(int(stored_msg_id))
+                    image_binary.seek(0)
+                    file = discord.File(fp=image_binary, filename="cop_live_scores.png")
+                    await message.edit(attachments=[], files=[file])
+                    return
+                except discord.NotFound:
+                    logger.warning(
+                        "Stored live-scores message %s not found; purging channel and recreating",
+                        stored_msg_id,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Failed editing live-scores message %s (%s); purging channel and recreating",
+                        stored_msg_id,
+                        exc,
+                    )
+
+                deleted_count = await self._clear_channel_messages(channel)
+                if deleted_count:
+                    logger.info(
+                        "Cleared %s message(s) from live-scores channel %s before recreating update post",
+                        deleted_count,
+                        channel.id,
+                    )
+            else:
+                # First run (no Redis key): do not purge channel history.
                 logger.info(
-                    "Cleared %s message(s) from live-scores channel %s before posting update",
-                    deleted_count,
+                    "No live-scores message key found for channel %s; creating initial post without purge",
                     channel.id,
                 )
 
