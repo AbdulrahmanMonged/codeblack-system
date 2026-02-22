@@ -28,6 +28,7 @@ import {
   getNotificationsUnreadCount,
   listNotifications,
   markAllNotificationsRead,
+  markNotificationRead,
 } from "../../features/notifications/api/notifications-api.js";
 import { extractApiErrorMessage } from "../../core/api/error-utils.js";
 import { toArray } from "../utils/collections.js";
@@ -59,6 +60,80 @@ function toInitials(name) {
   return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
 }
 
+function resolveNotificationTargetPath(item) {
+  if (!item || typeof item !== "object") return "/dashboard";
+
+  const eventType = String(item.event_type || "").toLowerCase();
+  const entityType = String(item.entity_type || "").toLowerCase();
+  const entityPublicId = String(item.entity_public_id || "").trim();
+  const metadata =
+    item.metadata_json && typeof item.metadata_json === "object" ? item.metadata_json : {};
+
+  const directPath = String(
+    metadata.redirect_path || metadata.route_path || metadata.path || "",
+  ).trim();
+  if (directPath.startsWith("/")) {
+    return directPath;
+  }
+
+  if (eventType === "applications.vote_required") {
+    const contextType = String(metadata.context_type || "application").toLowerCase();
+    const contextId = String(
+      metadata.context_id || metadata.application_public_id || entityPublicId || "",
+    ).trim();
+    if (contextId) {
+      return contextType === "application"
+        ? `/voting/application/${contextId}`
+        : `/voting/${contextType}/${contextId}`;
+    }
+  }
+
+  if (eventType.startsWith("verification_requests.")) {
+    return eventType.endsWith(".submitted") ? "/admin/review-queue" : "/verify-account";
+  }
+
+  if (eventType.startsWith("blacklist_removal.")) {
+    return eventType.endsWith(".submitted")
+      ? "/admin/review-queue"
+      : "/blacklist/removal-request";
+  }
+
+  switch (entityType) {
+    case "application":
+      return entityPublicId ? `/applications/${entityPublicId}` : "/applications";
+    case "order":
+      return entityPublicId ? `/orders/${entityPublicId}` : "/orders";
+    case "activity":
+      return entityPublicId ? `/activities/${entityPublicId}` : "/activities";
+    case "vacation":
+      return "/vacations";
+    case "verification_request":
+      return eventType.endsWith(".submitted") ? "/admin/review-queue" : "/verify-account";
+    case "blacklist_removal_request":
+      return eventType.endsWith(".submitted")
+        ? "/admin/review-queue"
+        : "/blacklist/removal-request";
+    case "config_registry":
+    case "config_key":
+      return "/config/registry";
+    case "membership":
+      return "/roster";
+    case "player":
+    case "playerbase":
+      return "/playerbase";
+    case "post":
+      return entityPublicId ? `/posts/${entityPublicId}` : "/posts";
+    default:
+      break;
+  }
+
+  if (eventType.startsWith("orders.")) return "/orders";
+  if (eventType.startsWith("activities.")) return "/activities";
+  if (eventType.startsWith("vacations.")) return "/vacations";
+  if (eventType.startsWith("roster.")) return "/roster";
+
+  return "/dashboard";
+}
 export function GlobalNavbar({ embedded = false }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -145,6 +220,22 @@ export function GlobalNavbar({ embedded = false }) {
       await Promise.all([refreshUnread(), refreshUnreadList()]);
     } catch (error) {
       toast.error(extractApiErrorMessage(error, "Failed to delete notifications"));
+    }
+  }
+
+  async function handleNotificationGoTo(item, path) {
+    const targetPath = typeof path === "string" && path ? path : resolveNotificationTargetPath(item);
+
+    try {
+      if (item?.public_id && !item?.is_read) {
+        await markNotificationRead(item.public_id);
+      }
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, "Failed to update notification status"));
+    } finally {
+      setNotificationsOpen(false);
+      await Promise.all([refreshUnread(), refreshUnreadList()]);
+      navigate(targetPath || "/dashboard");
     }
   }
 
@@ -240,40 +331,59 @@ export function GlobalNavbar({ embedded = false }) {
                     <Chip variant="flat">{unreadData?.unread_count || 0}</Chip>
                   </div>
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {toArray(unreadList).map((item) => (
-                      <div
-                        key={item.public_id}
-                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/85"
-                      >
-                        <p className="font-semibold text-white">{item.title}</p>
-                        <p className="mt-1 line-clamp-2 text-white/70">{item.body}</p>
-                      </div>
-                    ))}
+                    {toArray(unreadList).map((item) => {
+                      const targetPath = resolveNotificationTargetPath(item);
+                      return (
+                        <div
+                          key={item.public_id}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/85"
+                        >
+                          <p className="font-semibold text-white">{item.title}</p>
+                          <p className="mt-1 line-clamp-2 text-white/70">{item.body}</p>
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            <p className="line-clamp-1 text-[10px] uppercase tracking-[0.14em] text-white/45">
+                              {item.event_type || "notification"}
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              color="warning"
+                              onPress={() => handleNotificationGoTo(item, targetPath)}
+                            >
+                              Go to
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
                     {!toArray(unreadList).length ? (
                       <p className="rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-white/65">
                         No unread notifications.
                       </p>
                     ) : null}
                   </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button size="sm" variant="flat" onPress={handleMarkAllRead}>
-                      Mark all read
-                    </Button>
-                    <Separator orientation="vertical" className="h-5" />
-                    <Button size="sm" variant="ghost" onPress={handleDeleteAll}>
-                      Delete all
-                    </Button>
-                    <Separator orientation="vertical" className="h-5" />
-                    <Button
-                      size="sm"
-                      color="warning"
-                      onPress={() => {
-                        setNotificationsOpen(false);
-                        navigate("/notifications");
-                      }}
-                    >
-                      Open center
-                    </Button>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button size="sm" variant="flat" onPress={handleMarkAllRead}>
+                        Mark all read
+                      </Button>
+                      <Separator orientation="vertical" className="h-5" />
+                      <Button size="sm" variant="ghost" onPress={handleDeleteAll}>
+                        Delete all
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <Button
+                        size="sm"
+                        color="warning"
+                        onPress={() => {
+                          setNotificationsOpen(false);
+                          navigate("/notifications");
+                        }}
+                      >
+                        Open center
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ) : null}
