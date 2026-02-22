@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { resolveMediaUrl } from "../utils/media.js";
 import { useMotionPreference } from "../motion/useMotionPreference.js";
 
 const MAIN_BANNERS = [
@@ -10,30 +11,30 @@ const MAIN_BANNERS = [
       pathname === "/verify-account" ||
       pathname.startsWith("/admin") ||
       pathname.startsWith("/config"),
-    src: "/main/REDACTED-glitched-banner.gif",
+    src: resolveMediaUrl("/main/REDACTED-glitched-banner.gif"),
   },
   {
     matches: (pathname) => pathname.startsWith("/applications"),
-    src: "/main/application-banner.png",
+    src: resolveMediaUrl("/main/application-banner.png"),
   },
   {
     matches: (pathname) => pathname.startsWith("/roster"),
-    src: "/main/hall-of-fame-roster-banner.png",
+    src: resolveMediaUrl("/main/hall-of-fame-roster-banner.png"),
   },
   {
     matches: (pathname) => pathname.startsWith("/activities") || pathname.startsWith("/vacations"),
-    src: "/main/gathering-for-patrol.png",
+    src: resolveMediaUrl("/main/gathering-for-patrol.png"),
   },
 ];
 
 const RANDOM_BACKGROUNDS = [
-  "/random/capturing-drug-criminal-2.png",
-  "/random/capturing-drug-criminal.png",
-  "/random/oneline.png",
-  "/random/patrolling.png",
-  "/random/standing-next-to-each-other-2.png",
-  "/random/standing-next-to-each-other-3.png",
-  "/random/standing-next-to-each-other.png",
+  resolveMediaUrl("/random/capturing-drug-criminal-2.png"),
+  resolveMediaUrl("/random/capturing-drug-criminal.png"),
+  resolveMediaUrl("/random/oneline.png"),
+  resolveMediaUrl("/random/patrolling.png"),
+  resolveMediaUrl("/random/standing-next-to-each-other-2.png"),
+  resolveMediaUrl("/random/standing-next-to-each-other-3.png"),
+  resolveMediaUrl("/random/standing-next-to-each-other.png"),
 ];
 
 function hashPath(pathname) {

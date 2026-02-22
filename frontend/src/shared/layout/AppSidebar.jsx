@@ -12,6 +12,7 @@ import {
 import { closeSidebar, selectSidebarOpen } from "../../app/store/slices/uiSlice.js";
 import { hasAnyPermissionSet } from "../../core/permissions/guards.js";
 import { useMotionPreference } from "../motion/useMotionPreference.js";
+import { resolveMediaUrl } from "../utils/media.js";
 
 function SidebarLink({ to, label, isAllowed }) {
   const dispatch = useAppDispatch();
@@ -63,7 +64,7 @@ export function AppSidebar() {
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
             <img
-              src="/main/logo-on-hand.png"
+              src={resolveMediaUrl("/main/logo-on-hand.png")}
               alt="CodeBlack logo"
               className="h-10 w-10 rounded-lg border border-amber-200/30 object-cover"
             />

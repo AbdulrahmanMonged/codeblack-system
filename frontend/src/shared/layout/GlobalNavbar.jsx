@@ -31,6 +31,7 @@ import {
 } from "../../features/notifications/api/notifications-api.js";
 import { extractApiErrorMessage } from "../../core/api/error-utils.js";
 import { toArray } from "../utils/collections.js";
+import { resolveMediaUrl } from "../utils/media.js";
 
 function NavItem({ to, label, active }) {
   return (
@@ -187,7 +188,7 @@ export function GlobalNavbar({ embedded = false }) {
             </Button>
           ) : null}
           <img
-            src="/main-logo/REDACTED-round-logo.png"
+            src={resolveMediaUrl("/main-logo/REDACTED-round-logo.png")}
             alt="CodeBlack logo"
             className="h-9 w-9 rounded-full border border-amber-200/40 object-cover transition hover:scale-105"
           />
