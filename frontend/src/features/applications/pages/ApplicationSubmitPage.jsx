@@ -2,13 +2,16 @@ import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleX, ShieldAlert } from "lucide-react";
 import dayjs from "dayjs";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { extractApiErrorCode, extractApiErrorMessage } from "../../../core/api/error-utils.js";
+import { useMotionPreference } from "../../../shared/motion/useMotionPreference.js";
 import { formatBytes } from "../../../shared/utils/formatting.js";
 import { checkApplicationEligibility, submitApplication } from "../api/applications-api.js";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const APPLICATION_HISTORY_PAGE_SIZE = 5;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIGHIsAAAAABAzeoZxvO-98ut_5RJRGhqOi6vi";
 const RECAPTCHA_ACTION = import.meta.env.VITE_RECAPTCHA_ACTION || "application_submit";
@@ -124,6 +127,8 @@ export function ApplicationSubmitPage() {
   const [captchaLoadError, setCaptchaLoadError] = useState("");
   const [eligibility, setEligibility] = useState(null);
   const [submitted, setSubmitted] = useState(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const reduceMotion = useMotionPreference();
 
   const [form, setForm] = useState({
     accountName: "",
@@ -165,6 +170,10 @@ export function ApplicationSubmitPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [eligibility]);
+
   async function ensureCaptchaLoaded() {
     try {
       setIsCaptchaLoading(true);
@@ -182,6 +191,30 @@ export function ApplicationSubmitPage() {
       setIsCaptchaLoading(false);
     }
   }
+
+  const applicationHistory = useMemo(
+    () => (Array.isArray(eligibility?.application_history) ? eligibility.application_history : []),
+    [eligibility],
+  );
+
+  const applicationHistoryPageCount = useMemo(
+    () => Math.max(1, Math.ceil(applicationHistory.length / APPLICATION_HISTORY_PAGE_SIZE)),
+    [applicationHistory.length],
+  );
+
+  const visibleApplicationHistory = useMemo(() => {
+    const safePage = Math.min(Math.max(historyPage, 1), applicationHistoryPageCount);
+    const start = (safePage - 1) * APPLICATION_HISTORY_PAGE_SIZE;
+    return applicationHistory.slice(start, start + APPLICATION_HISTORY_PAGE_SIZE);
+  }, [applicationHistory, applicationHistoryPageCount, historyPage]);
+
+  const historyStartIndex = applicationHistory.length
+    ? (historyPage - 1) * APPLICATION_HISTORY_PAGE_SIZE + 1
+    : 0;
+  const historyEndIndex = Math.min(
+    historyPage * APPLICATION_HISTORY_PAGE_SIZE,
+    applicationHistory.length,
+  );
 
   const canMoveFromStep = useMemo(() => {
     if (step === 1) {
@@ -232,6 +265,7 @@ export function ApplicationSubmitPage() {
       }
       const result = await checkApplicationEligibility(normalized);
       setEligibility(result);
+      setHistoryPage(1);
       if (!result.allowed) {
         toast.error(
           Array.isArray(result.reasons) && result.reasons.length
@@ -284,6 +318,7 @@ export function ApplicationSubmitPage() {
       toast.success(`Application submitted: ${created.public_id}`);
       setStep(1);
       setEligibility(null);
+      setHistoryPage(1);
       setForm({
         accountName: "",
         inGameNickname: "",
@@ -357,6 +392,24 @@ export function ApplicationSubmitPage() {
     }
   }
 
+  const stepAnimationProps = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 18 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -18 },
+        transition: { duration: 0.22, ease: "easeOut" },
+      };
+
+  const resultAnimationProps = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 10, scale: 0.985 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: -10, scale: 0.985 },
+        transition: { duration: 0.2, ease: "easeOut" },
+      };
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <Card className="border border-white/15 bg-black/55 shadow-2xl backdrop-blur-xl">
@@ -378,270 +431,312 @@ export function ApplicationSubmitPage() {
           </div>
         </Card.Header>
         <Card.Content className="space-y-5 px-7 pb-7" onKeyDownCapture={handleFormEnter}>
-          {step === 1 ? (
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <div className="flex-1">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={`application-step-${step}`} className="space-y-5" {...stepAnimationProps}>
+              {step === 1 ? (
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="flex-1">
+                      <FormInput
+                        label="Account Name"
+                        value={form.accountName}
+                        onChange={(valueOrEvent) =>
+                          setField("accountName", readInputValue(valueOrEvent))
+                        }
+                        placeholder="Account name"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                    <Button
+                      color="warning"
+                      className="sm:self-end"
+                      onPress={runEligibilityCheck}
+                      isPending={isCheckingEligibility || isCaptchaLoading}
+                      isDisabled={isCheckingEligibility || isCaptchaLoading}
+                    >
+                      {({ isPending }) => (
+                        <>
+                          {isPending ? <Spinner color="current" size="sm" /> : null}
+                          {isPending ? "Checking..." : "Check Eligibility"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p
+                    className={[
+                      "text-xs",
+                      captchaLoadError
+                        ? "text-rose-200"
+                        : isCaptchaLoading
+                          ? "text-amber-100"
+                          : "text-emerald-100",
+                    ].join(" ")}
+                  >
+                    {captchaLoadError
+                      ? `Captcha error: ${captchaLoadError}`
+                      : isCaptchaLoading
+                        ? "Loading captcha security check..."
+                        : "Captcha security check is ready."}
+                  </p>
+
+                  <AnimatePresence mode="wait" initial={false}>
+                    {eligibility ? (
+                      <motion.div
+                        key={`eligibility-${eligibility.status}-${eligibility.allowed}-${eligibility.wait_until || "none"}`}
+                        className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80"
+                        {...resultAnimationProps}
+                      >
+                        <p>Status: {eligibility.status}</p>
+                        <p>Allowed: {eligibility.allowed ? "Yes" : "No"}</p>
+                        {eligibility.wait_until ? <p>Wait until: {eligibility.wait_until}</p> : null}
+                        {applicationHistory.length > 0 ? (
+                          <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-black/35 p-3">
+                            <p className="text-xs uppercase tracking-[0.16em] text-white/65">
+                              Previous Applications
+                            </p>
+                            {visibleApplicationHistory.map((item) => (
+                              <div
+                                key={item.public_id}
+                                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-white">{item.public_id}</p>
+                                  <Chip size="sm" color={historyStatusColor(item.status)} variant="flat">
+                                    {item.status}
+                                  </Chip>
+                                </div>
+                                <p className="mt-1 text-xs text-white/65">
+                                  Submitted {dayjs(item.submitted_at).format("YYYY-MM-DD HH:mm")}
+                                </p>
+                                {item.decision_reason &&
+                                ["declined", "denied", "rejected"].includes(
+                                  String(item.status || "").toLowerCase(),
+                                ) ? (
+                                  <p className="mt-1 text-xs text-rose-100">
+                                    Denial reason: {item.decision_reason}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))}
+                            {applicationHistoryPageCount > 1 ? (
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2">
+                                <p className="text-xs text-white/60">
+                                  Showing {historyStartIndex}-{historyEndIndex} of {applicationHistory.length}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    isDisabled={historyPage <= 1}
+                                    onPress={() => setHistoryPage((prev) => Math.max(prev - 1, 1))}
+                                  >
+                                    Previous
+                                  </Button>
+                                  <Chip size="sm" variant="flat">
+                                    Page {historyPage}/{applicationHistoryPageCount}
+                                  </Chip>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    isDisabled={historyPage >= applicationHistoryPageCount}
+                                    onPress={() =>
+                                      setHistoryPage((prev) =>
+                                        Math.min(prev + 1, applicationHistoryPageCount),
+                                      )
+                                    }
+                                  >
+                                    Next
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              ) : null}
+
+              {step === 2 ? (
+                <div className="grid gap-3 md:grid-cols-2">
                   <FormInput
                     label="Account Name"
                     value={form.accountName}
-                    onChange={(valueOrEvent) =>
-                      setField("accountName", readInputValue(valueOrEvent))
-                    }
+                    isDisabled
                     placeholder="Account name"
                     className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                   />
-                </div>
-                <Button
-                  color="warning"
-                  className="sm:self-end"
-                  onPress={runEligibilityCheck}
-                  isPending={isCheckingEligibility || isCaptchaLoading}
-                  isDisabled={isCheckingEligibility || isCaptchaLoading}
-                >
-                  {({ isPending }) => (
-                    <>
-                      {isPending ? <Spinner color="current" size="sm" /> : null}
-                      {isPending ? "Checking..." : "Check Eligibility"}
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p
-                className={[
-                  "text-xs",
-                  captchaLoadError
-                    ? "text-rose-200"
-                    : isCaptchaLoading
-                      ? "text-amber-100"
-                      : "text-emerald-100",
-                ].join(" ")}
-              >
-                {captchaLoadError
-                  ? `Captcha error: ${captchaLoadError}`
-                  : isCaptchaLoading
-                    ? "Loading captcha security check..."
-                    : "Captcha security check is ready."}
-              </p>
-              {eligibility ? (
-                <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80">
-                  <p>Status: {eligibility.status}</p>
-                  <p>Allowed: {eligibility.allowed ? "Yes" : "No"}</p>
-                  {eligibility.wait_until ? <p>Wait until: {eligibility.wait_until}</p> : null}
-                  {Array.isArray(eligibility.application_history) &&
-                  eligibility.application_history.length > 0 ? (
-                    <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-black/35 p-3">
-                      <p className="text-xs uppercase tracking-[0.16em] text-white/65">
-                        Previous Applications
-                      </p>
-                      {eligibility.application_history.map((item) => (
-                        <div
-                          key={item.public_id}
-                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-white">{item.public_id}</p>
-                            <Chip size="sm" color={historyStatusColor(item.status)} variant="flat">
-                              {item.status}
-                            </Chip>
-                          </div>
-                          <p className="mt-1 text-xs text-white/65">
-                            Submitted {dayjs(item.submitted_at).format("YYYY-MM-DD HH:mm")}
-                          </p>
-                          {item.decision_reason &&
-                          ["declined", "denied", "rejected"].includes(
-                            String(item.status || "").toLowerCase(),
-                          ) ? (
-                            <p className="mt-1 text-xs text-rose-100">
-                              Denial reason: {item.decision_reason}
-                            </p>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
+                  <FormInput
+                    label="In-Game Nickname"
+                    value={form.inGameNickname}
+                    onChange={(valueOrEvent) =>
+                      setField("inGameNickname", readInputValue(valueOrEvent))
+                    }
+                    placeholder="In-game nickname"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormInput
+                    label="MTA Serial"
+                    value={form.mtaSerial}
+                    onChange={(valueOrEvent) => setField("mtaSerial", readInputValue(valueOrEvent))}
+                    placeholder="MTA serial"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormInput
+                    label="English Skills"
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={form.englishSkill}
+                    onChange={(valueOrEvent) => {
+                      const rawValue = readInputValue(valueOrEvent);
+                      const parsed = Number(rawValue === "" ? "0" : rawValue);
+                      setField("englishSkill", Number.isFinite(parsed) ? parsed : 0);
+                    }}
+                    placeholder="English skills (0-10)"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormInput
+                    type="checkbox"
+                    checked={form.hasSecondAccount}
+                    onChange={(valueOrEvent) =>
+                      setField("hasSecondAccount", readCheckboxValue(valueOrEvent))
+                    }
+                  >
+                    I have a second account
+                  </FormInput>
+                  {form.hasSecondAccount ? (
+                    <FormInput
+                      label="Second Account Name"
+                      value={form.secondAccountName}
+                      onChange={(valueOrEvent) =>
+                        setField("secondAccountName", readInputValue(valueOrEvent))
+                      }
+                      placeholder="Second account name"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
                   ) : null}
                 </div>
               ) : null}
-            </div>
-          ) : null}
 
-          {step === 2 ? (
-            <div className="grid gap-3 md:grid-cols-2">
-              <FormInput
-                label="Account Name"
-                value={form.accountName}
-                isDisabled
-                placeholder="Account name"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <FormInput
-                label="In-Game Nickname"
-                value={form.inGameNickname}
-                onChange={(valueOrEvent) =>
-                  setField("inGameNickname", readInputValue(valueOrEvent))
-                }
-                placeholder="In-game nickname"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <FormInput
-                label="MTA Serial"
-                value={form.mtaSerial}
-                onChange={(valueOrEvent) => setField("mtaSerial", readInputValue(valueOrEvent))}
-                placeholder="MTA serial"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <FormInput
-                label="English Skills"
-                type="number"
-                min={0}
-                max={10}
-                value={form.englishSkill}
-                onChange={(valueOrEvent) => {
-                  const rawValue = readInputValue(valueOrEvent);
-                  const parsed = Number(rawValue === "" ? "0" : rawValue);
-                  setField("englishSkill", Number.isFinite(parsed) ? parsed : 0);
-                }}
-                placeholder="English skills (0-10)"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <FormInput
-                type="checkbox"
-                checked={form.hasSecondAccount}
-                onChange={(valueOrEvent) =>
-                  setField("hasSecondAccount", readCheckboxValue(valueOrEvent))
-                }
-              >
-                I have a second account
-              </FormInput>
-              {form.hasSecondAccount ? (
-                <FormInput
-                  label="Second Account Name"
-                  value={form.secondAccountName}
-                  onChange={(valueOrEvent) =>
-                    setField("secondAccountName", readInputValue(valueOrEvent))
-                  }
-                  placeholder="Second account name"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
+              {step === 3 ? (
+                <div className="space-y-3">
+                  <FormTextarea
+                    label="CIT Journey"
+                    rows={5}
+                    value={form.citJourney}
+                    onChange={(valueOrEvent) => setField("citJourney", readInputValue(valueOrEvent))}
+                    placeholder="Your CIT journey (min 40 chars): when you started, preferred sides, and key milestones."
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <p className="text-xs text-white/60">{form.citJourney.length}/40 minimum chars</p>
+
+                  <FormTextarea
+                    label="Former Groups"
+                    rows={4}
+                    value={form.formerGroupsReason}
+                    onChange={(valueOrEvent) =>
+                      setField("formerGroupsReason", readInputValue(valueOrEvent))
+                    }
+                    placeholder="Former groups and why you left or were removed (min 25 chars)."
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <p className="text-xs text-white/60">{form.formerGroupsReason.length}/25 minimum chars</p>
+
+                  <FormTextarea
+                    label="Why Join CODEBLACK?"
+                    rows={4}
+                    value={form.whyJoin}
+                    onChange={(valueOrEvent) => setField("whyJoin", readInputValue(valueOrEvent))}
+                    placeholder="Why do you want to join CODEBLACK and why should we accept you? (min 25 chars)."
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <p className="text-xs text-white/60">{form.whyJoin.length}/25 minimum chars</p>
+                </div>
               ) : null}
-            </div>
-          ) : null}
 
-          {step === 3 ? (
-            <div className="space-y-3">
-              <FormTextarea
-                label="CIT Journey"
-                rows={5}
-                value={form.citJourney}
-                onChange={(valueOrEvent) => setField("citJourney", readInputValue(valueOrEvent))}
-                placeholder="Your CIT journey (min 40 chars): when you started, preferred sides, and key milestones."
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <p className="text-xs text-white/60">{form.citJourney.length}/40 minimum chars</p>
+              {step === 4 ? (
+                <div className="space-y-3">
+                  {[
+                    {
+                      key: "punishlogImage",
+                      label: "Punishlog Image",
+                      validationLabel: "Punishlog image",
+                    },
+                    {
+                      key: "statsImage",
+                      label: "Stats Image",
+                      validationLabel: "Stats image",
+                    },
+                    {
+                      key: "historyImage",
+                      label: "History Image",
+                      validationLabel: "History image",
+                    },
+                  ].map((field) => {
+                    const value = form[field.key];
+                    const status = getImageValidationState(value, field.validationLabel);
+                    return (
+                      <div key={field.key} className="space-y-1">
+                        <FormInput
+                          label={field.label}
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          onChange={(valueOrEvent) =>
+                            setField(field.key, readFileValue(valueOrEvent))
+                          }
+                          className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                        />
+                        <div
+                          className={[
+                            "flex items-center gap-2 text-xs",
+                            status.isValid ? "text-emerald-100" : "text-rose-200",
+                          ].join(" ")}
+                        >
+                          {status.isValid ? <CheckCircle2 size={13} /> : <CircleX size={13} />}
+                          {status.isValid ? (
+                            <>
+                              <span className="truncate text-emerald-100">{status.fileName}</span>
+                              <span className="text-emerald-200/85">({status.sizeLabel})</span>
+                            </>
+                          ) : (
+                            <span>{status.message}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
 
-              <FormTextarea
-                label="Former Groups"
-                rows={4}
-                value={form.formerGroupsReason}
-                onChange={(valueOrEvent) =>
-                  setField("formerGroupsReason", readInputValue(valueOrEvent))
-                }
-                placeholder="Former groups and why you left or were removed (min 25 chars)."
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <p className="text-xs text-white/60">{form.formerGroupsReason.length}/25 minimum chars</p>
-
-              <FormTextarea
-                label="Why Join CODEBLACK?"
-                rows={4}
-                value={form.whyJoin}
-                onChange={(valueOrEvent) => setField("whyJoin", readInputValue(valueOrEvent))}
-                placeholder="Why do you want to join CODEBLACK and why should we accept you? (min 25 chars)."
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <p className="text-xs text-white/60">{form.whyJoin.length}/25 minimum chars</p>
-            </div>
-          ) : null}
-
-          {step === 4 ? (
-            <div className="space-y-3">
-              {[
-                {
-                  key: "punishlogImage",
-                  label: "Punishlog Image",
-                  validationLabel: "Punishlog image",
-                },
-                {
-                  key: "statsImage",
-                  label: "Stats Image",
-                  validationLabel: "Stats image",
-                },
-                {
-                  key: "historyImage",
-                  label: "History Image",
-                  validationLabel: "History image",
-                },
-              ].map((field) => {
-                const value = form[field.key];
-                const status = getImageValidationState(value, field.validationLabel);
-                return (
-                  <div key={field.key} className="space-y-1">
-                    <FormInput
-                      label={field.label}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={(valueOrEvent) =>
-                        setField(field.key, readFileValue(valueOrEvent))
-                      }
-                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                    />
-                    <div
-                      className={[
-                        "flex items-center gap-2 text-xs",
-                        status.isValid ? "text-emerald-100" : "text-rose-200",
-                      ].join(" ")}
-                    >
-                      {status.isValid ? <CheckCircle2 size={13} /> : <CircleX size={13} />}
-                      {status.isValid ? (
-                        <>
-                          <span className="truncate text-emerald-100">{status.fileName}</span>
-                          <span className="text-emerald-200/85">({status.sizeLabel})</span>
-                        </>
-                      ) : (
-                        <span>{status.message}</span>
-                      )}
-                    </div>
+              {step === 5 ? (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80">
+                    <p className="whitespace-pre-line">{AGREEMENT_TEXT}</p>
                   </div>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {step === 5 ? (
-            <div className="space-y-3">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80">
-                <p className="whitespace-pre-line">{AGREEMENT_TEXT}</p>
-              </div>
-              <FormInput
-                type="checkbox"
-                checked={form.agreeTos}
-                onChange={(valueOrEvent) =>
-                  setField("agreeTos", readCheckboxValue(valueOrEvent))
-                }
-              >
-                I agree to the platform ToS and review policy.
-              </FormInput>
-              <FormInput
-                type="checkbox"
-                checked={form.agreeLetter}
-                onChange={(valueOrEvent) =>
-                  setField("agreeLetter", readCheckboxValue(valueOrEvent))
-                }
-              >
-                I confirm the agreement letter text above.
-              </FormInput>
-            </div>
-          ) : null}
+                  <FormInput
+                    type="checkbox"
+                    checked={form.agreeTos}
+                    onChange={(valueOrEvent) =>
+                      setField("agreeTos", readCheckboxValue(valueOrEvent))
+                    }
+                  >
+                    I agree to the platform ToS and review policy.
+                  </FormInput>
+                  <FormInput
+                    type="checkbox"
+                    checked={form.agreeLetter}
+                    onChange={(valueOrEvent) =>
+                      setField("agreeLetter", readCheckboxValue(valueOrEvent))
+                    }
+                  >
+                    I confirm the agreement letter text above.
+                  </FormInput>
+                </div>
+              ) : null}
+            </motion.div>
+          </AnimatePresence>
 
           <div className="flex flex-wrap justify-between gap-2">
             <Button
