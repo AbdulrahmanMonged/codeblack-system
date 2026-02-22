@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Separator, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { CheckCircle2, CircleX, ExternalLink, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -180,6 +180,7 @@ export function OrderDetailPage() {
                   </>
                 )}
               </Button>
+              <Separator orientation="vertical" className="h-6 bg-white/20" />
               <Button
                 color="danger"
                 variant="flat"

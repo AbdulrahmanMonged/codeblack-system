@@ -560,6 +560,7 @@ export function RoleMatrixPage() {
                       >
                         Select All Permissions
                       </Button>
+                      <Separator orientation="vertical" className="h-6 bg-white/20" />
                       <Button
                         size="sm"
                         variant="ghost"
@@ -594,6 +595,7 @@ export function RoleMatrixPage() {
                               >
                                 Select Section
                               </Button>
+                              <Separator orientation="vertical" className="h-5 bg-white/20" />
                               <Button
                                 size="sm"
                                 variant="ghost"

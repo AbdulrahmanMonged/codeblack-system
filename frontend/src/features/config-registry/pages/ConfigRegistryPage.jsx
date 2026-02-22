@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Separator } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CheckCircle2,
@@ -420,6 +420,9 @@ export function ConfigRegistryPage() {
                             Approve
                           </Button>
                         ) : null}
+                        {canApprove && change.status === "pending_approval" && canRollback ? (
+                          <Separator orientation="vertical" className="h-5 bg-white/20" />
+                        ) : null}
                         {canRollback ? (
                           <Button
                             size="sm"
@@ -533,6 +536,7 @@ export function ConfigRegistryPage() {
                       Preview
                     </Button>
                   ) : null}
+                  {canPreview && canWrite ? <Separator orientation="vertical" className="h-5 bg-white/20" /> : null}
                   {canWrite ? (
                     <Button
                       color="warning"

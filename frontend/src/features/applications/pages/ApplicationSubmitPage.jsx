@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Separator, Spinner } from "@heroui/react";
 import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleX, ShieldAlert } from "lucide-react";
 import dayjs from "dayjs";
@@ -738,7 +738,7 @@ export function ApplicationSubmitPage() {
             </motion.div>
           </AnimatePresence>
 
-          <div className="flex flex-wrap justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="ghost"
               startContent={<ArrowLeft size={14} />}
@@ -747,6 +747,7 @@ export function ApplicationSubmitPage() {
             >
               Previous
             </Button>
+            <Separator orientation="vertical" className="h-6 bg-white/20" />
             {step < 5 ? (
               <Button
                 color="warning"
