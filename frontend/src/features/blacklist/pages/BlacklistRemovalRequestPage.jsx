@@ -117,6 +117,7 @@ export function BlacklistRemovalRequestPage() {
                     label="Account Name"
                     value={accountName}
                     onChange={(event) => setAccountName(event.target.value)}
+                    onEnter={runCheck}
                     placeholder="Account name"
                     className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                   />
@@ -134,12 +135,14 @@ export function BlacklistRemovalRequestPage() {
           ) : (
             <form className="space-y-3" onSubmit={handleSubmit}>
               <FormInput
+                label="Account Name"
                 value={accountName}
                 isDisabled
                 placeholder="Account name"
                 className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
               />
               <FormTextarea
+                label="Removal Request Explanation"
                 rows={6}
                 value={requestText}
                 onChange={(event) => setRequestText(event.target.value)}
