@@ -404,6 +404,8 @@ class ConfigRegistryService:
                 entity_public_id=change.config_key,
                 metadata_json={"change_id": change.id},
             )
+            await session.flush()
+            await session.refresh(entry)
             return ConfigMutationResponse(
                 key=change.config_key,
                 change_id=change.id,

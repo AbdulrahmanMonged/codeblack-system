@@ -100,6 +100,8 @@ class VacationService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(row)
             return self._to_dict(row)
 
     async def list_requests(
@@ -199,6 +201,8 @@ class VacationService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(row)
             return self._to_dict(row)
 
     async def deny_request(
@@ -247,6 +251,8 @@ class VacationService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(row)
             return self._to_dict(row)
 
     async def cancel_request(
@@ -271,6 +277,8 @@ class VacationService:
                     message="Only request owner can cancel this vacation request",
                 )
             row.status = "cancelled"
+            await session.flush()
+            await session.refresh(row)
             return self._to_dict(row)
 
     async def mark_returned(
@@ -330,6 +338,8 @@ class VacationService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(row)
             return self._to_dict(row)
 
     async def get_policies(self) -> dict[str, int]:

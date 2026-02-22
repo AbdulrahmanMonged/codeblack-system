@@ -150,7 +150,7 @@ class ActivityService:
                     else None,
                 },
             )
-            return await self._activity_to_dict(repo, row)
+            return await self._activity_to_dict(repo, row, refresh=True)
 
     async def publish_to_forum(
         self,
@@ -289,7 +289,7 @@ class ActivityService:
                     "activity_type": row.activity_type,
                 },
             )
-            return await self._activity_to_dict(repo, row)
+            return await self._activity_to_dict(repo, row, refresh=True)
 
     async def add_participant(
         self,
@@ -338,7 +338,12 @@ class ActivityService:
     def _public_id() -> str:
         return f"ACT-{uuid4().hex[:12].upper()}"
 
-    async def _activity_to_dict(self, repo: ActivityRepository, row) -> dict:
+    async def _activity_to_dict(
+        self, repo: ActivityRepository, row, *, refresh: bool = False
+    ) -> dict:
+        if refresh:
+            await repo.session.flush()
+            await repo.session.refresh(row)
         participants = await repo.list_participants(row.id)
         return {
             "public_id": row.public_id,
@@ -390,7 +395,7 @@ class ActivityService:
                     message=f"Cannot publish activity in status={row.status}",
                 )
             return {
-                "activity": await self._activity_to_dict(repo, row),
+                "activity": await self._activity_to_dict(repo, row, refresh=True),
                 "dispatch": {
                     "acknowledged": False,
                     "error": f"invalid_status:{row.status}",
@@ -408,7 +413,7 @@ class ActivityService:
                     message="Activity already has forum_post_id. Use force_retry=true to republish.",
                 )
             return {
-                "activity": await self._activity_to_dict(repo, row),
+                "activity": await self._activity_to_dict(repo, row, refresh=True),
                 "dispatch": {
                     "acknowledged": False,
                     "error": "already_published",
@@ -446,7 +451,7 @@ class ActivityService:
                 },
             )
             return {
-                "activity": await self._activity_to_dict(repo, row),
+                "activity": await self._activity_to_dict(repo, row, refresh=True),
                 "dispatch": {
                     "acknowledged": False,
                     "error": "ACTIVITY_FORUM_TOPIC_REQUIRED",
@@ -512,7 +517,7 @@ class ActivityService:
                 },
             )
 
-        activity_payload = await self._activity_to_dict(repo, row)
+        activity_payload = await self._activity_to_dict(repo, row, refresh=True)
         return {
             "activity": activity_payload,
             "dispatch": dispatch,

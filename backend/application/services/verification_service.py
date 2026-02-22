@@ -206,6 +206,8 @@ class VerificationService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(reviewed)
             return self._to_dict(reviewed)
 
     async def deny_request(
@@ -265,6 +267,8 @@ class VerificationService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(reviewed)
             return self._to_dict(reviewed)
 
     @staticmethod
