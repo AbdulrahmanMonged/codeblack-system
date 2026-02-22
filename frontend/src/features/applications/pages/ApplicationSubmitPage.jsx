@@ -326,6 +326,37 @@ export function ApplicationSubmitPage() {
     setStep((prev) => Math.max(prev - 1, 1));
   }
 
+  function handleFormEnter(event) {
+    if (event.defaultPrevented) return;
+    if (event.key !== "Enter") return;
+    if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
+
+    const tagName = String(event.target?.tagName || "").toLowerCase();
+    const inputType = String(event.target?.type || "").toLowerCase();
+
+    if (tagName === "textarea" || tagName === "button" || inputType === "file") {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (step === 1 && !eligibility?.allowed) {
+      if (!isCheckingEligibility && !isCaptchaLoading) {
+        runEligibilityCheck();
+      }
+      return;
+    }
+
+    if (step < 5) {
+      nextStep();
+      return;
+    }
+
+    if (!isSubmitting) {
+      handleSubmit();
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <Card className="border border-white/15 bg-black/55 shadow-2xl backdrop-blur-xl">
@@ -346,7 +377,7 @@ export function ApplicationSubmitPage() {
             ))}
           </div>
         </Card.Header>
-        <Card.Content className="space-y-5 px-7 pb-7">
+        <Card.Content className="space-y-5 px-7 pb-7" onKeyDownCapture={handleFormEnter}>
           {step === 1 ? (
             <div className="space-y-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
