@@ -6,6 +6,7 @@ import { AnimatedOutlet } from "../motion/AnimatedOutlet.jsx";
 import { AppSidebar } from "./AppSidebar.jsx";
 import { GlobalFooter } from "./GlobalFooter.jsx";
 import { GlobalNavbar } from "./GlobalNavbar.jsx";
+import { DashboardBreadcrumbs } from "./DashboardBreadcrumbs.jsx";
 
 export function AppShell() {
   const dispatch = useAppDispatch();
@@ -23,6 +24,9 @@ export function AppShell() {
           <GlobalNavbar embedded />
         </div>
         <main className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-6">
+          <div className="mb-4">
+            <DashboardBreadcrumbs />
+          </div>
           <AnimatedOutlet />
         </main>
         <div className="px-3 pb-3 md:px-6 md:pb-4">
