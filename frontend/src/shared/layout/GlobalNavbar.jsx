@@ -72,6 +72,7 @@ export function GlobalNavbar({ embedded = false }) {
   const isAuthenticated = sessionStatus === "authenticated";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isSignInRedirecting, setIsSignInRedirecting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isAuthCallbackRoute = location.pathname === "/auth/callback";
   const isDashboardActive = location.pathname === "/dashboard";
   const isVerifyActive = location.pathname === "/verify-account";
@@ -113,14 +114,20 @@ export function GlobalNavbar({ embedded = false }) {
   );
 
   async function handleLogout() {
+    if (isLoggingOut) {
+      return;
+    }
+    setIsLoggingOut(true);
     try {
       await logoutSession();
     } catch {
       // session may already be invalidated
+    } finally {
+      dispatch(clearSession());
+      toast.success("Signed out");
+      navigate("/");
+      setIsLoggingOut(false);
     }
-    dispatch(clearSession());
-    toast.success("Signed out");
-    navigate("/");
   }
 
   async function handleMarkAllRead() {
@@ -308,9 +315,11 @@ export function GlobalNavbar({ embedded = false }) {
                 isIconOnly
                 variant="ghost"
                 aria-label="Sign out"
+                isDisabled={isLoggingOut}
+                isPending={isLoggingOut}
                 onPress={handleLogout}
               >
-                <DoorOpen size={16} />
+                {isLoggingOut ? <Spinner color="current" size="sm" /> : <DoorOpen size={16} />}
               </Button>
             </>
           ) : (
