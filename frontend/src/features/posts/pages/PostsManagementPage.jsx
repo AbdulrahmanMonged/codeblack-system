@@ -10,6 +10,7 @@ import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
@@ -32,6 +33,8 @@ export function PostsManagementPage() {
 
   const [selectedPublicId, setSelectedPublicId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const [editingTitle, setEditingTitle] = useState("");
   const [editingContent, setEditingContent] = useState("");
@@ -44,22 +47,29 @@ export function PostsManagementPage() {
   const [isPublishing, setIsPublishing] = useState(false);
 
   const { data, mutate, isLoading, error } = useSWR(
-    canRead ? ["dashboard-posts-list"] : null,
-    () => listPosts({ publishedOnly: false, limit: 100, offset: 0 }),
+    canRead ? ["dashboard-posts-list", page, pageSize] : null,
+    () =>
+      listPosts({
+        publishedOnly: false,
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
+      }),
   );
 
   const rows = useMemo(() => toArray(data), [data]);
+  const pageRows = useMemo(() => rows.slice(0, pageSize), [rows, pageSize]);
+  const hasNextPage = rows.length > pageSize;
   const filteredRows = useMemo(
     () =>
-      rows.filter((row) =>
+      pageRows.filter((row) =>
         includesSearchQuery(row, searchQuery, ["public_id", "title", "content", "is_published"]),
       ),
-    [rows, searchQuery],
+    [pageRows, searchQuery],
   );
 
   const selected = useMemo(
-    () => rows.find((item) => item.public_id === selectedPublicId) || null,
-    [rows, selectedPublicId],
+    () => pageRows.find((item) => item.public_id === selectedPublicId) || null,
+    [pageRows, selectedPublicId],
   );
 
   if (!canAccess) {
@@ -206,6 +216,18 @@ export function PostsManagementPage() {
                   inputClassName="w-full"
                 />
               </div>
+              <ListPaginationBar
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(nextPageSize) => {
+                  setPageSize(nextPageSize);
+                  setPage(1);
+                }}
+                hasNextPage={hasNextPage}
+                isLoading={isLoading}
+                visibleCount={filteredRows.length}
+              />
               <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
                 {filteredRows.map((row) => (
                   <button

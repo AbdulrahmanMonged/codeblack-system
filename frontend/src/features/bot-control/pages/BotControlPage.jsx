@@ -20,6 +20,7 @@ import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.js
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import { includesSearchQuery } from "../../../shared/utils/search.js";
 import {
@@ -90,6 +91,8 @@ export function BotControlPage() {
   const [featuresDraft, setFeaturesDraft] = useState({});
   const [dispatchLog, setDispatchLog] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deadLetterPage, setDeadLetterPage] = useState(1);
+  const [deadLetterPageSize, setDeadLetterPageSize] = useState(20);
 
   const {
     data: channelsData,
@@ -108,16 +111,26 @@ export function BotControlPage() {
     error: deadLettersError,
     isLoading: deadLettersLoading,
     mutate: refreshDeadLetters,
-  } = useSWR(canRead ? ["bot-dead-letters"] : null, () =>
-    listBotDeadLetters({ limit: 100 }),
+  } = useSWR(
+    canRead ? ["bot-dead-letters", deadLetterPage, deadLetterPageSize] : null,
+    () =>
+      listBotDeadLetters({
+        limit: deadLetterPageSize + 1,
+        offset: (deadLetterPage - 1) * deadLetterPageSize,
+      }),
   );
 
   const deadLetterRows = useMemo(() => toArray(deadLetters), [deadLetters]);
+  const pageDeadLetterRows = useMemo(
+    () => deadLetterRows.slice(0, deadLetterPageSize),
+    [deadLetterRows, deadLetterPageSize],
+  );
+  const hasDeadLetterNextPage = deadLetterRows.length > deadLetterPageSize;
   const dispatchLogRows = useMemo(() => toArray(dispatchLog), [dispatchLog]);
 
   const filteredDeadLetterRows = useMemo(
     () =>
-      deadLetterRows.filter((entry) =>
+      pageDeadLetterRows.filter((entry) =>
         includesSearchQuery(entry, searchQuery, [
           "stream_id",
           "command_type",
@@ -125,7 +138,7 @@ export function BotControlPage() {
           "error",
         ]),
       ),
-    [deadLetterRows, searchQuery],
+    [pageDeadLetterRows, searchQuery],
   );
 
   const filteredDispatchLogRows = useMemo(
@@ -447,6 +460,20 @@ export function BotControlPage() {
                     description="No failed bot commands are waiting for replay."
                   />
                 ) : null}
+              </div>
+              <div className="mt-3">
+                <ListPaginationBar
+                  page={deadLetterPage}
+                  pageSize={deadLetterPageSize}
+                  onPageChange={setDeadLetterPage}
+                  onPageSizeChange={(nextPageSize) => {
+                    setDeadLetterPageSize(nextPageSize);
+                    setDeadLetterPage(1);
+                  }}
+                  hasNextPage={hasDeadLetterNextPage}
+                  isLoading={deadLettersLoading}
+                  visibleCount={filteredDeadLetterRows.length}
+                />
               </div>
               {deadLettersError ? (
                 <ErrorBlock

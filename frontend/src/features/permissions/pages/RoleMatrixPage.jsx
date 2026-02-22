@@ -21,6 +21,7 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
@@ -100,19 +101,30 @@ export function RoleMatrixPage() {
   const [draftPermissions, setDraftPermissions] = useState([]);
   const [pendingRoleSwitch, setPendingRoleSwitch] = useState(null);
   const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const {
     data: roleMatrix,
     error: roleMatrixError,
     isLoading: roleMatrixLoading,
     mutate: refreshRoleMatrix,
-  } = useSWR(canRead ? ["permissions-role-matrix"] : null, () => listRoleMatrix());
+  } = useSWR(
+    canRead ? ["permissions-role-matrix", page, pageSize] : null,
+    () =>
+      listRoleMatrix({
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
+      }),
+  );
 
   const roleRows = useMemo(() => toArray(roleMatrix), [roleMatrix]);
+  const pageRoleRows = useMemo(() => roleRows.slice(0, pageSize), [roleRows, pageSize]);
+  const hasNextPage = roleRows.length > pageSize;
 
   const selectedRole = useMemo(
-    () => roleRows.find((role) => String(role.discord_role_id) === String(selectedRoleId)) || null,
-    [roleRows, selectedRoleId],
+    () => pageRoleRows.find((role) => String(role.discord_role_id) === String(selectedRoleId)) || null,
+    [pageRoleRows, selectedRoleId],
   );
 
   const selectedAssignedPermissions = useMemo(
@@ -241,12 +253,12 @@ export function RoleMatrixPage() {
             <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
               <div className="mb-2 flex items-center justify-between px-2 py-1">
                 <p className="text-sm text-white/70">
-                  Roles: <span className="font-semibold text-white">{roleRows.length}</span>
+                  Roles: <span className="font-semibold text-white">{pageRoleRows.length}</span>
                 </p>
               </div>
               <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
                 {roleMatrixLoading ? <LoadingBlock label="Loading roles..." /> : null}
-                {roleRows.map((role) => {
+                {pageRoleRows.map((role) => {
                   const active = String(role.discord_role_id) === String(selectedRoleId);
                   return (
                     <button
@@ -273,12 +285,26 @@ export function RoleMatrixPage() {
                     </button>
                   );
                 })}
-                {!roleMatrixLoading && roleRows.length === 0 ? (
+                {!roleMatrixLoading && pageRoleRows.length === 0 ? (
                   <EmptyBlock
                     title="No roles found"
                     description="No Discord roles are currently available in the cache."
                   />
                 ) : null}
+              </div>
+              <div className="mt-3">
+                <ListPaginationBar
+                  page={page}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={(nextPageSize) => {
+                    setPageSize(nextPageSize);
+                    setPage(1);
+                  }}
+                  hasNextPage={hasNextPage}
+                  isLoading={roleMatrixLoading}
+                  visibleCount={pageRoleRows.length}
+                />
               </div>
             </Card>
 
