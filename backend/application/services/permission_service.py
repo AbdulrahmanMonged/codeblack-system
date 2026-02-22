@@ -10,7 +10,7 @@ class PermissionService:
     def __init__(self):
         self.settings = get_settings()
 
-    async def list_role_matrix(self) -> list[dict]:
+    async def list_role_matrix(self, *, limit: int, offset: int) -> list[dict]:
         async with get_session() as session:
             repo = AuthRepository(session)
             roles = await repo.list_discord_roles(guild_id=self.settings.DISCORD_GUILD_ID)
@@ -23,7 +23,10 @@ class PermissionService:
             permission_map.setdefault(role_id, set()).add(permission_key)
 
         result: list[dict] = []
-        for role in roles:
+        page_offset = max(0, int(offset))
+        page_limit = max(1, int(limit))
+        paged_roles = roles[page_offset : page_offset + page_limit]
+        for role in paged_roles:
             assigned = sorted(permission_map.get(role.discord_role_id, set()))
             result.append(
                 {
@@ -45,36 +48,56 @@ class PermissionService:
         permission_keys: list[str],
     ) -> dict:
         normalized_keys = sorted(set(permission_keys))
-        async with get_session() as session:
-            repo = AuthRepository(session)
-            roles = await repo.list_discord_roles(guild_id=self.settings.DISCORD_GUILD_ID)
-            selected_role = next(
-                (role for role in roles if role.discord_role_id == discord_role_id),
-                None,
-            )
-            if selected_role is None:
+        selected_role = None
+        available_permissions = []
+        role_sync_attempted = False
+
+        while True:
+            async with get_session() as session:
+                repo = AuthRepository(session)
+                roles = await repo.list_discord_roles(guild_id=self.settings.DISCORD_GUILD_ID)
+                selected_role = next(
+                    (role for role in roles if role.discord_role_id == discord_role_id),
+                    None,
+                )
+
+                if selected_role is not None:
+                    existing_permission_keys = await repo.list_existing_permission_keys(normalized_keys)
+                    missing = sorted(set(normalized_keys) - existing_permission_keys)
+                    if missing:
+                        raise ApiException(
+                            status_code=422,
+                            error_code="UNKNOWN_PERMISSION_KEYS",
+                            message="One or more permission keys are unknown",
+                            details={"unknown_permission_keys": missing},
+                        )
+
+                    await repo.replace_role_permissions(
+                        discord_role_id=discord_role_id,
+                        permission_keys=normalized_keys,
+                    )
+                    available_permissions = await repo.list_permissions()
+                    break
+
+            if role_sync_attempted:
                 raise ApiException(
                     status_code=404,
                     error_code="DISCORD_ROLE_NOT_FOUND",
                     message=f"Discord role {discord_role_id} not found in cache",
                 )
 
-            existing_permission_keys = await repo.list_existing_permission_keys(normalized_keys)
-            missing = sorted(set(normalized_keys) - existing_permission_keys)
-            if missing:
+            role_sync_attempted = True
+            from backend.application.services.auth_service import AuthService
+
+            try:
+                await AuthService().sync_discord_roles()
+            except ApiException as exc:
                 raise ApiException(
-                    status_code=422,
-                    error_code="UNKNOWN_PERMISSION_KEYS",
-                    message="One or more permission keys are unknown",
-                    details={"unknown_permission_keys": missing},
-                )
-
-            await repo.replace_role_permissions(
-                discord_role_id=discord_role_id,
-                permission_keys=normalized_keys,
-            )
-            available_permissions = await repo.list_permissions()
-
+                    status_code=404,
+                    error_code="DISCORD_ROLE_NOT_FOUND",
+                    message=f"Discord role {discord_role_id} not found in cache",
+                    details={"role_sync_error": exc.error_code},
+                ) from exc
         return {
             "discord_role_id": selected_role.discord_role_id,
             "guild_id": selected_role.guild_id,
