@@ -202,6 +202,20 @@ export function RoleMatrixPage() {
       sortUniquePermissions(previous.filter((permissionKey) => !sectionSet.has(permissionKey))),
     );
   }
+  function handleSelectAllPermissions() {
+    if (!canWrite || !isOwner) {
+      return;
+    }
+    setDraftPermissions(sortUniquePermissions(allPermissionKeys));
+  }
+
+  function handleClearAllPermissions() {
+    if (!canWrite || !isOwner) {
+      return;
+    }
+    setDraftPermissions([]);
+  }
+
 
 
   async function handleSavePermissions() {
@@ -330,6 +344,7 @@ export function RoleMatrixPage() {
                 title="Failed to load role matrix"
                 description={extractApiErrorMessage(roleMatrixError)}
                 onRetry={() => refreshRoleMatrix()}
+
               />
             ) : null}
           </section>
@@ -344,6 +359,27 @@ export function RoleMatrixPage() {
                   </div>
                   <Chip variant="flat">Draft: {draftPermissions.length} permissions</Chip>
                 </div>
+
+                {isOwner ? (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      isDisabled={!canWrite || !allPermissionKeys.length}
+                      onPress={handleSelectAllPermissions}
+                    >
+                      Select All Permissions
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      isDisabled={!canWrite || !draftPermissions.length}
+                      onPress={handleClearAllPermissions}
+                    >
+                      Clear All Permissions
+                    </Button>
+                  </div>
+                ) : null}
 
                 <div className="rounded-xl border border-white/10 bg-black/35 p-3">
                   {groupedPermissions.length ? (
