@@ -19,6 +19,7 @@ import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { formatBytes } from "../../../shared/utils/formatting.js";
 import { getAccountLinkByUserId, submitOrder } from "../api/orders-api.js";
+import { MyOrdersPanel } from "../components/MyOrdersPanel.jsx";
 
 const defaultValues = {
   ingameName: "",
@@ -56,6 +57,9 @@ export function OrderSubmitPage() {
   const [proofError, setProofError] = useState("");
 
   const canSubmit = hasAnyPermissionSet(["orders.submit"], permissions, isOwner);
+  const canReadOrders = hasAnyPermissionSet(["orders.read"], permissions, isOwner);
+  const canAccessOrdersTab = canSubmit || canReadOrders;
+  const canOpenOrderDetails = canReadOrders;
   const canReadAccountLink = hasAnyPermissionSet(
     ["user_account_link.read", "user_account_link.write"],
     permissions,
@@ -95,17 +99,22 @@ export function OrderSubmitPage() {
     },
   });
 
-  if (!canSubmit) {
+  if (!canAccessOrdersTab) {
     return (
       <ForbiddenState
-        title="Orders Submit Permission Missing"
-        description="You need orders.submit permission to submit order proofs."
+        title="Orders Access Missing"
+        description="You need orders.submit or orders.read permission to access the orders tab."
       />
     );
   }
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitted(null);
+
+    if (!canSubmit) {
+      toast.error("You do not have permission to submit new orders.");
+      return;
+    }
 
     const proofImage = values.proofImage?.[0];
     const proofValidation = validateProofFile(proofImage);
@@ -193,6 +202,7 @@ export function OrderSubmitPage() {
                   type="text"
                   label="In-game name"
                   className="w-full"
+                  isDisabled={!canSubmit || isSubmitting}
                   {...register("ingameName")}
                 />
                 {errors.ingameName ? (
@@ -206,6 +216,7 @@ export function OrderSubmitPage() {
                   label="Completed orders"
                   placeholder="Order IDs or summary"
                   className="w-full"
+                  isDisabled={!canSubmit || isSubmitting}
                   {...register("completedOrders")}
                 />
                 <div className="flex items-center justify-between">
@@ -225,6 +236,7 @@ export function OrderSubmitPage() {
                 label="Proof image (required)"
                 accept="image/png,image/jpeg,image/webp"
                 className="w-full"
+                isDisabled={!canSubmit || isSubmitting}
                 {...proofRegister}
               />
               {proofError ? <p className="text-xs text-rose-200">{proofError}</p> : null}
@@ -245,6 +257,7 @@ export function OrderSubmitPage() {
               <Button
                 type="button"
                 variant="ghost"
+                isDisabled={!canSubmit || isSubmitting}
                 onPress={() => {
                   reset(defaultValues);
                   setProofError("");
@@ -257,7 +270,7 @@ export function OrderSubmitPage() {
                 type="submit"
                 color="warning"
                 isPending={isSubmitting}
-                isDisabled={isSubmitting}
+                isDisabled={isSubmitting || !canSubmit}
               >
                 {({ isPending }) => (
                   <>
@@ -293,6 +306,8 @@ export function OrderSubmitPage() {
           </Card.Content>
         </Card>
       ) : null}
+
+      <MyOrdersPanel canOpenDetails={canOpenOrderDetails} />
 
       <Card className="border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
         <div className="flex items-start gap-3 text-sm text-white/80">
