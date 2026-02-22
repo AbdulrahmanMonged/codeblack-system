@@ -106,6 +106,53 @@ normalize_base_url() {
   echo "${raw%/}"
 }
 
+infer_content_type_from_extension() {
+  local lower_path="${1,,}"
+  case "$lower_path" in
+    *.png) echo "image/png" ;;
+    *.jpg|*.jpeg) echo "image/jpeg" ;;
+    *.gif) echo "image/gif" ;;
+    *.webp) echo "image/webp" ;;
+    *.svg) echo "image/svg+xml" ;;
+    *.avif) echo "image/avif" ;;
+    *.mp4) echo "video/mp4" ;;
+    *.webm) echo "video/webm" ;;
+    *.mov) echo "video/quicktime" ;;
+    *.mp3) echo "audio/mpeg" ;;
+    *.wav) echo "audio/wav" ;;
+    *.ogg) echo "audio/ogg" ;;
+    *.flac) echo "audio/flac" ;;
+    *.woff) echo "font/woff" ;;
+    *.woff2) echo "font/woff2" ;;
+    *.ttf) echo "font/ttf" ;;
+    *.otf) echo "font/otf" ;;
+    *) echo "application/octet-stream" ;;
+  esac
+}
+
+is_media_content_type() {
+  case "$1" in
+    image/*|video/*|audio/*|font/*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_media_extension() {
+  local lower_path="${1,,}"
+  case "$lower_path" in
+    *.png|*.jpg|*.jpeg|*.gif|*.webp|*.svg|*.avif|*.mp4|*.webm|*.mov|*.mp3|*.wav|*.ogg|*.flac|*.woff|*.woff2|*.ttf|*.otf)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 BUNNY_ENDPOINT="${BUNNY_STORAGE_ENDPOINT:-}"
 BUNNY_ZONE="${BUNNY_STORAGE_ZONE:-}"
 BUNNY_ACCESS_KEY="${BUNNY_STORAGE_ACCESS_KEY:-}"
@@ -142,6 +189,19 @@ if [[ -n "$KEY_PREFIX" ]]; then
   KEY_PREFIX="${KEY_PREFIX}/"
 fi
 
+manifest_abs="$MANIFEST_FILE"
+if [[ "$manifest_abs" != /* ]]; then
+  manifest_abs="${REPO_ROOT}/${manifest_abs}"
+fi
+source_abs="$SOURCE_DIR"
+if [[ "$source_abs" != /* ]]; then
+  source_abs="${REPO_ROOT}/${source_abs}"
+fi
+manifest_rel_skip=""
+if [[ "$manifest_abs" == "$source_abs/"* ]]; then
+  manifest_rel_skip="${manifest_abs#${source_abs}/}"
+fi
+
 mapfile -d '' FILES < <(find "$SOURCE_DIR" -type f -print0 | sort -z)
 if [[ ${#FILES[@]} -eq 0 ]]; then
   echo "No files found under $SOURCE_DIR"
@@ -153,20 +213,41 @@ mkdir -p "$(dirname "$MANIFEST_FILE")"
 
 uploaded=0
 failed=0
+skipped=0
 
 for file_path in "${FILES[@]}"; do
   rel_path="${file_path#${SOURCE_DIR}/}"
-  key="${KEY_PREFIX}${rel_path}"
-  upload_url="${BUNNY_ENDPOINT}/${BUNNY_ZONE}/${key}"
 
+  if [[ -n "$manifest_rel_skip" && "$rel_path" == "$manifest_rel_skip" ]]; then
+    printf 'SKIP     %-45s -> generated manifest\n' "$rel_path"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  case "${rel_path##*/}" in
+    cdn-manifest.tsv)
+      printf 'SKIP     %-45s -> manifest artifact\n' "$rel_path"
+      skipped=$((skipped + 1))
+      continue
+      ;;
+  esac
+
+  content_type=""
   if command -v file >/dev/null 2>&1; then
     content_type="$(file --brief --mime-type "$file_path" 2>/dev/null || true)"
-  else
-    content_type=""
   fi
   if [[ -z "$content_type" ]]; then
-    content_type="application/octet-stream"
+    content_type="$(infer_content_type_from_extension "$rel_path")"
   fi
+
+  if ! is_media_content_type "$content_type" && ! is_media_extension "$rel_path"; then
+    printf 'SKIP     %-45s -> non-media file (%s)\n' "$rel_path" "$content_type"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  key="${KEY_PREFIX}${rel_path}"
+  upload_url="${BUNNY_ENDPOINT}/${BUNNY_ZONE}/${key}"
 
   if [[ -n "$BUNNY_PUBLIC_BASE" ]]; then
     public_url="${BUNNY_PUBLIC_BASE}/${key}"
@@ -198,7 +279,7 @@ for file_path in "${FILES[@]}"; do
   fi
 done
 
-echo "Upload summary: uploaded=${uploaded}, failed=${failed}, manifest=${MANIFEST_FILE}"
+echo "Upload summary: uploaded=${uploaded}, failed=${failed}, skipped=${skipped}, manifest=${MANIFEST_FILE}"
 
 if [[ "$failed" -gt 0 ]]; then
   exit 1
