@@ -34,6 +34,7 @@ class ApplicationService:
     CAPTCHA_SITE_KEY_CONFIG_KEY = "applications.captcha_site_key"
     VOTING_AUTO_CLOSE_DAYS_CONFIG_KEY = "voting.auto_close_days"
     DEFAULT_VOTING_AUTO_CLOSE_DAYS = 3
+    PENDING_APPLICATION_STATUSES = frozenset({"submitted", "pending", "under_review"})
 
     def __init__(self):
         self.settings = get_settings()
@@ -167,6 +168,24 @@ class ApplicationService:
                     reasons=[f"BLACKLIST_ACTIVE_LEVEL_{blacklist_entry.blacklist_level}"],
                     application_history=history,
                 )
+
+            pending_application = next(
+                (
+                    application
+                    for application, _decision in history_rows
+                    if str(application.status or "").lower() in self.PENDING_APPLICATION_STATUSES
+                ),
+                None,
+            )
+            if pending_application is not None:
+                return self._eligibility_response(
+                    allowed=False,
+                    status="pending_review",
+                    wait_until=None,
+                    reasons=["APPLICATION_ALREADY_PENDING"],
+                    application_history=history,
+                )
+
             row = await repo.get_eligibility_by_account(normalized)
             if row is None:
                 return self._eligibility_response(
