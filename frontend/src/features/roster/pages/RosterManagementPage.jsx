@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Disclosure } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import dayjs from "dayjs";
 import { Plus, RefreshCw, Users2 } from "lucide-react";
@@ -202,8 +202,19 @@ export function RosterManagementPage() {
         <section className="space-y-4">
           {canWriteRoster ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Create Membership</p>
-              <form className="space-y-3" onSubmit={handleCreateMembership}>
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <Plus size={14} />
+                      Create Membership
+                    </span>
+                    <Disclosure.Indicator />
+                  </Button>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <form className="space-y-3" onSubmit={handleCreateMembership}>
                 <FormInput
                   name="playerId"
                   type="number"
@@ -244,14 +255,28 @@ export function RosterManagementPage() {
                 <Button type="submit" color="warning" startContent={<Plus size={14} />}>
                   Create Membership
                 </Button>
-              </form>
+                    </form>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
           {selectedMembership && canWriteRoster ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Update Membership #{selectedMembership.membership_id}</p>
-              <div className="space-y-3">
+              <Disclosure defaultExpanded>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <Users2 size={14} />
+                      Update Membership #{selectedMembership.membership_id}
+                    </span>
+                    <Disclosure.Indicator />
+                  </Button>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="space-y-3">
                 <FormSelect
                   value={membershipStatus}
                   onChange={(event) => setMembershipStatus(event.target.value)}
@@ -271,14 +296,28 @@ export function RosterManagementPage() {
                   className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
                 <Button color="warning" onPress={handleUpdateMembership}>Save Membership</Button>
-              </div>
+                    </div>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
           {canWriteRanks ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Create Rank</p>
-              <form className="space-y-3" onSubmit={handleCreateRank}>
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <Plus size={14} />
+                      Create Rank
+                    </span>
+                    <Disclosure.Indicator />
+                  </Button>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <form className="space-y-3" onSubmit={handleCreateRank}>
                 <FormInput
                   name="name"
                   placeholder="Rank name"
@@ -295,7 +334,10 @@ export function RosterManagementPage() {
                 <Button type="submit" color="warning" startContent={<Plus size={14} />}>
                   Create Rank
                 </Button>
-              </form>
+                    </form>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
