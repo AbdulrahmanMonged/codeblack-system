@@ -1,5 +1,6 @@
-import { Avatar, Button, Card, Chip } from "@heroui/react";
-import { Bell, DoorOpen, LayoutDashboard, LogIn, Menu, X } from "lucide-react";
+import { Avatar, Button, Card, Chip, Spinner } from "@heroui/react";
+import { Bell, DoorOpen, LayoutDashboard, Menu, X } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useSWR from "swr";
 import { useState } from "react";
@@ -314,12 +315,20 @@ export function GlobalNavbar({ embedded = false }) {
           ) : (
             <Button
               color="warning"
-              isLoading={isSignInRedirecting || isAuthCallbackRoute}
+              isPending={isSignInRedirecting || isAuthCallbackRoute}
               isDisabled={isSignInRedirecting || isAuthCallbackRoute}
-              startContent={<LogIn size={14} />}
               onPress={handleSignIn}
             >
-              {isAuthCallbackRoute ? "Verifying..." : "Sign In"}
+              {({ isPending }) => (
+                <>
+                  {isPending ? (
+                    <Spinner color="current" size="sm" />
+                  ) : (
+                    <Icon icon="ri:discord-fill" width="16" height="16" />
+                  )}
+                  {isAuthCallbackRoute ? "Verifying..." : "Sign In"}
+                </>
+              )}
             </Button>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import dayjs from "dayjs";
 import {
@@ -753,10 +753,15 @@ export function ReviewQueuePage() {
           <Button
             variant="ghost"
             onPress={() => refreshQueue()}
-            isLoading={queueLoading}
-            startContent={<RefreshCw size={15} />}
+            isPending={queueLoading}
+            isDisabled={queueLoading}
           >
-            Refresh Queue
+            {({ isPending }) => (
+              <>
+                {isPending ? <Spinner color="current" size="sm" /> : <RefreshCw size={15} />}
+                {isPending ? "Refreshing..." : "Refresh Queue"}
+              </>
+            )}
           </Button>
         </div>
       </Card>

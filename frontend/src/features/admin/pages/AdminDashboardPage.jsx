@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   Activity,
@@ -121,11 +121,16 @@ export function AdminDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Button
               variant="ghost"
-              startContent={<RefreshCw size={15} />}
               onPress={() => mutate()}
-              isLoading={isLoading}
+              isPending={isLoading}
+              isDisabled={isLoading}
             >
-              Refresh
+              {({ isPending }) => (
+                <>
+                  {isPending ? <Spinner color="current" size="sm" /> : <RefreshCw size={15} />}
+                  {isPending ? "Refreshing..." : "Refresh"}
+                </>
+              )}
             </Button>
             <Button as={Link} to="/admin/review-queue" color="warning">
               Open Review Queue

@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleX, ShieldAlert } from "lucide-react";
 import dayjs from "dayjs";
@@ -396,9 +396,15 @@ export function ApplicationSubmitPage() {
                   color="warning"
                   className="sm:self-end"
                   onPress={runEligibilityCheck}
-                  isLoading={isCheckingEligibility || isCaptchaLoading}
+                  isPending={isCheckingEligibility || isCaptchaLoading}
+                  isDisabled={isCheckingEligibility || isCaptchaLoading}
                 >
-                  Check Eligibility
+                  {({ isPending }) => (
+                    <>
+                      {isPending ? <Spinner color="current" size="sm" /> : null}
+                      {isPending ? "Checking..." : "Check Eligibility"}
+                    </>
+                  )}
                 </Button>
               </div>
               <p
@@ -658,12 +664,16 @@ export function ApplicationSubmitPage() {
             ) : (
               <Button
                 color="success"
-                startContent={<CheckCircle2 size={14} />}
                 onPress={handleSubmit}
-                isLoading={isSubmitting}
-                isDisabled={!canMoveFromStep}
+                isPending={isSubmitting}
+                isDisabled={!canMoveFromStep || isSubmitting}
               >
-                Submit Application
+                {({ isPending }) => (
+                  <>
+                    {isPending ? <Spinner color="current" size="sm" /> : <CheckCircle2 size={14} />}
+                    {isPending ? "Submitting..." : "Submit Application"}
+                  </>
+                )}
               </Button>
             )}
           </div>

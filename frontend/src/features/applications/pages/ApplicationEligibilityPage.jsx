@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { Clock4, SearchCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -86,8 +86,13 @@ export function ApplicationEligibilityPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button type="submit" color="warning" isLoading={isSubmitting} startContent={<SearchCheck size={15} />}>
-                Check Eligibility
+              <Button type="submit" color="warning" isPending={isSubmitting} isDisabled={isSubmitting}>
+                {({ isPending }) => (
+                  <>
+                    {isPending ? <Spinner color="current" size="sm" /> : <SearchCheck size={15} />}
+                    {isPending ? "Checking..." : "Check Eligibility"}
+                  </>
+                )}
               </Button>
               <Button as={Link} to="/applications/new" variant="ghost">
                 Open Application Form
