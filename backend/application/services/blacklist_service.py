@@ -213,6 +213,8 @@ class BlacklistService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(row)
             return self._removal_request_to_dict(row)
 
     async def check_removal_eligibility(self, *, account_name: str) -> dict:
@@ -360,6 +362,8 @@ class BlacklistService:
                     include_actor_if_missing=False,
                 )
 
+            await session.flush()
+            await session.refresh(row)
             return self._removal_request_to_dict(row)
 
     def _format_blacklist_player_id(self, sequence: int) -> str:

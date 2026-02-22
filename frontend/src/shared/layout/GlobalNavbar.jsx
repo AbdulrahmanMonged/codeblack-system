@@ -325,7 +325,7 @@ export function GlobalNavbar({ embedded = false }) {
                 </span>
               </Button>
               {notificationsOpen ? (
-                <Card className="absolute right-0 top-11 z-20 w-[320px] border border-white/15 bg-black/80 p-3 shadow-2xl backdrop-blur-xl">
+                <Card className="fixed left-3 right-3 top-20 z-20 border border-white/15 bg-black/80 p-3 shadow-2xl backdrop-blur-xl md:absolute md:left-auto md:right-0 md:top-11 md:w-[320px]">
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-sm font-semibold text-white">Unread notifications</p>
                     <Chip variant="flat">{unreadData?.unread_count || 0}</Chip>

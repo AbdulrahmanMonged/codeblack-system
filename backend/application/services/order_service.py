@@ -70,6 +70,8 @@ class OrderService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(order)
             return self._order_to_dict(order)
 
     async def list_orders(
@@ -189,6 +191,8 @@ class OrderService:
                 },
                 include_actor_if_missing=False,
             )
+            await session.flush()
+            await session.refresh(row)
             return self._order_to_dict(row)
 
     async def link_user_account(
@@ -214,6 +218,8 @@ class OrderService:
                 account_name=normalized_account_name,
                 is_verified=is_verified,
             )
+            await session.flush()
+            await session.refresh(row)
             return self._account_link_to_dict(row)
 
     async def get_user_account_link(self, *, user_id: int) -> dict:

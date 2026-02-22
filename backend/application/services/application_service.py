@@ -150,6 +150,8 @@ class ApplicationService:
                     },
                     recipient_permission="voting.cast",
                 )
+            await session.flush()
+            await session.refresh(application)
             return self._application_to_dict(application)
 
     async def check_eligibility(self, *, account_name: str) -> dict:
@@ -376,6 +378,8 @@ class ApplicationService:
                     },
                 )
 
+            await session.flush()
+            await session.refresh(application)
             return self._application_to_dict(application)
 
     async def _resolve_voting_auto_close_days(self, repo: ConfigRegistryRepository) -> int:
