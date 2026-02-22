@@ -8,7 +8,7 @@ import {
   Send,
   ShieldAlert,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -17,6 +17,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
@@ -58,6 +59,8 @@ export function NotificationsCenterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicId, setSelectedPublicId] = useState("");
   const [metadataRaw, setMetadataRaw] = useState("{}");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const {
     data: notifications,
@@ -65,8 +68,10 @@ export function NotificationsCenterPage() {
     isLoading: notificationsLoading,
     mutate: refreshNotifications,
   } = useSWR(
-    canRead ? ["notifications-list", unreadOnly ? "unread" : "all"] : null,
-    () => listNotifications({ unreadOnly, limit: 100, offset: 0 }),
+    canRead
+      ? ["notifications-list", unreadOnly ? "unread" : "all", page, pageSize]
+      : null,
+    () => listNotifications({ unreadOnly, limit: pageSize + 1, offset: (page - 1) * pageSize }),
   );
 
   const { data: unreadData, mutate: refreshUnread } = useSWR(
@@ -75,9 +80,14 @@ export function NotificationsCenterPage() {
   );
 
   const notificationRows = useMemo(() => toArray(notifications), [notifications]);
+  const pageNotificationRows = useMemo(
+    () => notificationRows.slice(0, pageSize),
+    [notificationRows, pageSize],
+  );
+  const hasNextPage = notificationRows.length > pageSize;
   const filteredNotificationRows = useMemo(
     () =>
-      notificationRows.filter((item) =>
+      pageNotificationRows.filter((item) =>
         includesSearchQuery(item, searchQuery, [
           "public_id",
           "title",
@@ -89,13 +99,17 @@ export function NotificationsCenterPage() {
           "entity_public_id",
         ]),
       ),
-    [notificationRows, searchQuery],
+    [pageNotificationRows, searchQuery],
   );
 
   const selectedNotification = useMemo(
-    () => notificationRows.find((item) => item.public_id === selectedPublicId) || null,
-    [notificationRows, selectedPublicId],
+    () => pageNotificationRows.find((item) => item.public_id === selectedPublicId) || null,
+    [pageNotificationRows, selectedPublicId],
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [unreadOnly]);
 
   if (!canAccess) {
     return (
@@ -347,6 +361,18 @@ export function NotificationsCenterPage() {
                     />
                   ) : null}
                 </div>
+                <ListPaginationBar
+                  page={page}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={(nextPageSize) => {
+                    setPageSize(nextPageSize);
+                    setPage(1);
+                  }}
+                  hasNextPage={hasNextPage}
+                  isLoading={notificationsLoading}
+                  visibleCount={filteredNotificationRows.length}
+                />
               </Card>
             </>
           ) : (

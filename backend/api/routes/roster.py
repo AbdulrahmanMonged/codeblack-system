@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 
 from backend.api.deps.auth import get_current_principal, require_permissions
@@ -25,16 +25,21 @@ def get_roster_service() -> RosterService:
 
 @router.get("", response_model=list[RosterMembershipResponse])
 async def list_roster(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     _: object = Depends(require_permissions("roster.read")),
     service: RosterService = Depends(get_roster_service),
 ):
     settings = get_settings()
-    cache_key = cache.build_key("roster_list")
+    cache_key = cache.build_key(
+        "roster_list",
+        {"limit": limit, "offset": offset},
+    )
     cached = await cache.get_json(cache_key)
     if cached is not None:
         return [RosterMembershipResponse(**row) for row in cached]
 
-    rows = await service.list_roster()
+    rows = await service.list_roster(limit=limit, offset=offset)
     payload = [RosterMembershipResponse(**row).model_dump(mode="json") for row in rows]
     await cache.set_json(
         key=cache_key,

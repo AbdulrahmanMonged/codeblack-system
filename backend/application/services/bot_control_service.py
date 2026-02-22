@@ -159,10 +159,15 @@ class BotControlService:
             payload={},
         )
 
-    async def list_dead_letters(self, *, limit: int) -> list[dict[str, Any]]:
+    async def list_dead_letters(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> list[dict[str, Any]]:
         ipc = BackendIPCClient()
         try:
-            return await ipc.list_dead_letters(limit=limit)
+            return await ipc.list_dead_letters(limit=limit, offset=offset)
         finally:
             await ipc.close()
 

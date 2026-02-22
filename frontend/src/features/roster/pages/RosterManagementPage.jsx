@@ -1,10 +1,11 @@
 import { Button, Card, Chip } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import dayjs from "dayjs";
 import { Plus, RefreshCw, Users2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -42,10 +43,12 @@ export function RosterManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [membershipStatus, setMembershipStatus] = useState("active");
   const [membershipNotes, setMembershipNotes] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const { data: memberships, error: rosterError, mutate: refreshRoster, isLoading: rosterLoading } = useSWR(
-    canReadRoster ? ["roster-memberships"] : null,
-    () => listRoster(),
+    canReadRoster ? ["roster-memberships", page, pageSize] : null,
+    () => listRoster({ limit: pageSize + 1, offset: (page - 1) * pageSize }),
   );
   const { data: ranks, error: ranksError, mutate: refreshRanks } = useSWR(
     canReadRoster ? ["roster-ranks"] : null,
@@ -53,9 +56,11 @@ export function RosterManagementPage() {
   );
 
   const membershipRows = useMemo(() => toArray(memberships), [memberships]);
+  const pageMembershipRows = useMemo(() => membershipRows.slice(0, pageSize), [membershipRows, pageSize]);
+  const hasNextPage = membershipRows.length > pageSize;
   const filteredMembershipRows = useMemo(
     () =>
-      membershipRows.filter((row) =>
+      pageMembershipRows.filter((row) =>
         includesSearchQuery(row, searchQuery, [
           "membership_id",
           "player_id",
@@ -65,13 +70,19 @@ export function RosterManagementPage() {
           "status",
         ]),
       ),
-    [membershipRows, searchQuery],
+    [pageMembershipRows, searchQuery],
   );
   const rankRows = useMemo(() => toArray(ranks), [ranks]);
   const selectedMembership = useMemo(
-    () => membershipRows.find((row) => String(row.membership_id) === String(selectedMembershipId)) || null,
-    [membershipRows, selectedMembershipId],
+    () => pageMembershipRows.find((row) => String(row.membership_id) === String(selectedMembershipId)) || null,
+    [pageMembershipRows, selectedMembershipId],
   );
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setPage(1);
+    }
+  }, [searchQuery]);
 
   if (!canReadRoster) {
     return (
@@ -223,6 +234,18 @@ export function RosterManagementPage() {
                 No memberships matched the current search query.
               </div>
             ) : null}
+            <ListPaginationBar
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(nextPageSize) => {
+                setPageSize(nextPageSize);
+                setPage(1);
+              }}
+              hasNextPage={hasNextPage}
+              isLoading={rosterLoading}
+              visibleCount={filteredMembershipRows.length}
+            />
           </Card>
           {rosterError ? (
             <Card className="border border-rose-300/25 bg-rose-300/10 p-3">

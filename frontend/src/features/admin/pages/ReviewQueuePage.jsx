@@ -2,6 +2,7 @@ import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import dayjs from "dayjs";
 import {
   CheckCheck,
@@ -177,6 +178,8 @@ export function ReviewQueuePage() {
   const [cooldownDays, setCooldownDays] = useState("7");
   const [scheduledFor, setScheduledFor] = useState("");
   const [isDeciding, setIsDeciding] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const queueKey = useMemo(
     () => [
@@ -185,8 +188,10 @@ export function ReviewQueuePage() {
       status || "",
       search || "",
       pendingOnly ? "1" : "0",
+      page,
+      pageSize,
     ],
-    [pendingOnly, search, selectedTypes, status],
+    [page, pageSize, pendingOnly, search, selectedTypes, status],
   );
 
   const {
@@ -200,8 +205,8 @@ export function ReviewQueuePage() {
       status: status || undefined,
       search: search || undefined,
       pendingOnly,
-      limit: 80,
-      offset: 0,
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
     }),
   );
 
@@ -209,6 +214,8 @@ export function ReviewQueuePage() {
     () => (Array.isArray(queueData?.items) ? queueData.items : []),
     [queueData?.items],
   );
+  const queueTotal = Number(queueData?.total || 0);
+  const hasNextPage = page * pageSize < queueTotal;
 
   const filteredQueueItems = useMemo(
     () =>
@@ -233,9 +240,13 @@ export function ReviewQueuePage() {
   );
 
   const selectedItem = useMemo(
-    () => queueItems.find((item) => `${item.item_type}:${item.item_id}` === selectedKey) || null,
+    () => queueItems.find((item) => [item.item_type, item.item_id].join(":" ) === selectedKey) || null,
     [queueItems, selectedKey],
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [pendingOnly, search, selectedTypes, status]);
 
   useEffect(() => {
     if (!filteredQueueItems.length) {
@@ -913,6 +924,19 @@ export function ReviewQueuePage() {
                 </div>
               ) : null}
             </div>
+            <ListPaginationBar
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(nextPageSize) => {
+                setPageSize(nextPageSize);
+                setPage(1);
+              }}
+              hasNextPage={hasNextPage}
+              isLoading={queueLoading}
+              visibleCount={filteredQueueItems.length}
+              totalCount={queueTotal}
+            />
           </Card>
         </section>
 

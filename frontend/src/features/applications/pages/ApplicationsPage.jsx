@@ -1,6 +1,7 @@
 import { Button, Card, Chip } from "@heroui/react";
 import { FormSelect } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import dayjs from "dayjs";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -37,6 +38,8 @@ export function ApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicId, setSelectedPublicId] = useState(params.publicId || "");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const {
     data: applications,
@@ -44,19 +47,24 @@ export function ApplicationsPage() {
     isLoading: listLoading,
     mutate: refreshList,
   } = useSWR(
-    canReadAny ? ["applications-list", statusFilter || "all"] : null,
+    canReadAny
+      ? ["applications-list", statusFilter || "all", page, pageSize]
+      : null,
     () =>
       listApplications({
         status: statusFilter || undefined,
-        limit: 100,
-        offset: 0,
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
       }),
   );
 
   const rows = useMemo(() => toArray(applications), [applications]);
+  const pageRows = useMemo(() => rows.slice(0, pageSize), [rows, pageSize]);
+  const hasNextPage = rows.length > pageSize;
+
   const filteredRows = useMemo(
     () =>
-      rows.filter((row) =>
+      pageRows.filter((row) =>
         includesSearchQuery(row, searchQuery, [
           "public_id",
           "account_name",
@@ -65,11 +73,11 @@ export function ApplicationsPage() {
           "status",
         ]),
       ),
-    [rows, searchQuery],
+    [pageRows, searchQuery],
   );
   const selectedFromList = useMemo(
-    () => rows.find((row) => row.public_id === selectedPublicId) || null,
-    [rows, selectedPublicId],
+    () => pageRows.find((row) => row.public_id === selectedPublicId) || null,
+    [pageRows, selectedPublicId],
   );
   const {
     data: selectedFromApi,
@@ -90,6 +98,10 @@ export function ApplicationsPage() {
       setSelectedPublicId(rows[0].public_id);
     }
   }, [params.publicId, rows, selectedPublicId]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   if (!canReadAny) {
     return (
@@ -189,6 +201,18 @@ export function ApplicationsPage() {
                 </button>
               ))}
             </div>
+            <ListPaginationBar
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(nextPageSize) => {
+                setPageSize(nextPageSize);
+                setPage(1);
+              }}
+              hasNextPage={hasNextPage}
+              isLoading={listLoading}
+              visibleCount={filteredRows.length}
+            />
           </Card>
 
           {listError ? (

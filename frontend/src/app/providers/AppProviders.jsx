@@ -20,7 +20,7 @@ export function AppProviders({ children }) {
         <SessionBootstrap>
           <SWRConfig value={swrOptions}>
             {children}
-            <Toast.Provider placement="top-end" maxVisibleToasts={5} />
+            <Toast.Provider maxVisibleToasts={5} />
           </SWRConfig>
         </SessionBootstrap>
       </PersistGate>
