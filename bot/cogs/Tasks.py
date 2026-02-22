@@ -22,6 +22,27 @@ class Tasks(commands.Cog):
             if task.is_running():
                 task.cancel()
 
+    async def _clear_channel_messages(self, channel: discord.abc.GuildChannel) -> int:
+        """Best-effort deletion of all deletable messages in the target channel."""
+        deleted = 0
+        try:
+            async for message in channel.history(limit=None):
+                try:
+                    await message.delete()
+                    deleted += 1
+                except discord.Forbidden:
+                    logger.error("Missing permissions to delete messages in channel %s", channel.id)
+                    break
+                except discord.NotFound:
+                    continue
+                except discord.HTTPException as exc:
+                    logger.debug("Skipping message %s delete due to HTTP error: %s", message.id, exc)
+        except discord.Forbidden:
+            logger.error("Missing permissions to read history for channel %s", channel.id)
+        except Exception as exc:
+            logger.error("Failed to clear channel %s: %s", channel.id, exc)
+        return deleted
+
     @tasks.loop(seconds=30.0)
     async def watch_cop_live_scores(self):
         """Watch for cop live scores and update Discord image"""
@@ -42,29 +63,19 @@ class Tasks(commands.Cog):
                 return
 
             image_binary = generate_cop_live_scores_image(scores)
-            stored_msg_id = await RedisManager.get(redis_key)
 
-            if stored_msg_id:
-                try:
-                    message = await channel.fetch_message(int(stored_msg_id))
-                    image_binary.seek(0)
-                    file = discord.File(fp=image_binary, filename="cop_live_scores.png")
-                    await message.edit(attachments=[], files=[file])
-                except discord.NotFound:
-                    image_binary.seek(0)
-                    file = discord.File(fp=image_binary, filename="cop_live_scores.png")
-                    message = await channel.send(content="Top Cop Live Scores", file=file)
-                    await RedisManager.set(redis_key, str(message.id))
-                except Exception:
-                    image_binary.seek(0)
-                    file = discord.File(fp=image_binary, filename="cop_live_scores.png")
-                    message = await channel.send(content="Top Cop Live Scores", file=file)
-                    await RedisManager.set(redis_key, str(message.id))
-            else:
-                image_binary.seek(0)
-                file = discord.File(fp=image_binary, filename="cop_live_scores.png")
-                message = await channel.send(content="Top Cop Live Scores", file=file)
-                await RedisManager.set(redis_key, str(message.id))
+            deleted_count = await self._clear_channel_messages(channel)
+            if deleted_count:
+                logger.info(
+                    "Cleared %s message(s) from live-scores channel %s before posting update",
+                    deleted_count,
+                    channel.id,
+                )
+
+            image_binary.seek(0)
+            file = discord.File(fp=image_binary, filename="cop_live_scores.png")
+            message = await channel.send(content="Top Cop Live Scores", file=file)
+            await RedisManager.set(redis_key, str(message.id))
 
         except Exception as e:
             logger.error(f"Error in watch_cop_live_scores: {e}")
