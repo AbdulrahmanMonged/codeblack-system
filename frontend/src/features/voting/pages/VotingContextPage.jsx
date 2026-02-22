@@ -1,5 +1,6 @@
-import { Avatar, Button, Card, Chip, Disclosure } from "@heroui/react";
+import { Avatar, Button, Card, Chip } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import dayjs from "dayjs";
 import {
   CheckCircle2,
@@ -327,19 +328,13 @@ export function VotingContextPage() {
                 <section className="space-y-4">
           {canCast ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <Disclosure>
-                <Disclosure.Heading>
-                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
-                    <span className="inline-flex items-center gap-2">
+              <FormSectionDisclosure
+  title={<><span className="inline-flex items-center gap-2">
                       <CheckCircle2 size={14} />
                       Cast Vote
-                    </span>
-                    <Disclosure.Indicator />
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <FormTextarea
+                    </span></>}
+>
+<FormTextarea
                       rows={3}
                       value={voteComment}
                       onChange={(event) => setVoteComment(event.target.value)}
@@ -354,27 +349,19 @@ export function VotingContextPage() {
                         Vote NO
                       </Button>
                     </div>
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
+</FormSectionDisclosure>
             </Card>
           ) : null}
 
           {(canClose || canReopen || canReset) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <Disclosure>
-                <Disclosure.Heading>
-                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
-                    <span className="inline-flex items-center gap-2">
+              <FormSectionDisclosure
+  title={<><span className="inline-flex items-center gap-2">
                       <LockKeyhole size={14} />
                       Moderation
-                    </span>
-                    <Disclosure.Indicator />
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <FormTextarea
+                    </span></>}
+>
+<FormTextarea
                       rows={3}
                       value={moderationReason}
                       onChange={(event) => setModerationReason(event.target.value)}
@@ -408,27 +395,19 @@ export function VotingContextPage() {
                         </Button>
                       </>
                     ) : null}
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
+</FormSectionDisclosure>
             </Card>
           ) : null}
 
           {isApplicationContext && canReviewApplications ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <Disclosure>
-                <Disclosure.Heading>
-                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
-                    <span className="inline-flex items-center gap-2">
+              <FormSectionDisclosure
+  title={<><span className="inline-flex items-center gap-2">
                       <ShieldAlert size={14} />
                       Final Decision
-                    </span>
-                    <Disclosure.Indicator />
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <FormTextarea
+                    </span></>}
+>
+<FormTextarea
                       rows={3}
                       value={decisionReason}
                       onChange={(event) => setDecisionReason(event.target.value)}
@@ -468,9 +447,7 @@ export function VotingContextPage() {
                         </Button>
                       ) : null}
                     </div>
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
+</FormSectionDisclosure>
             </Card>
           ) : null}
 

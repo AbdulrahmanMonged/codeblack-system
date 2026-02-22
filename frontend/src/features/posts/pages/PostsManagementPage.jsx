@@ -1,5 +1,6 @@
-import { Button, Card, Chip, Disclosure } from "@heroui/react";
+import { Button, Card, Chip } from "@heroui/react";
 import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import dayjs from "dayjs";
 import { Check, PencilLine, Plus, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -177,19 +178,13 @@ export function PostsManagementPage() {
         <section className="space-y-4">
           {canWrite ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <Disclosure>
-                <Disclosure.Heading>
-                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
-                    <span className="inline-flex items-center gap-2">
+              <FormSectionDisclosure
+  title={<><span className="inline-flex items-center gap-2">
                       <Plus size={14} />
                       Create Post
-                    </span>
-                    <Disclosure.Indicator />
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <form className="space-y-3" onSubmit={handleCreate}>
+                    </span></>}
+>
+<form className="space-y-3" onSubmit={handleCreate}>
                 <FormInput
                   name="title"
                   placeholder="Post title"
@@ -210,27 +205,19 @@ export function PostsManagementPage() {
                   Create
                 </Button>
                     </form>
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
+</FormSectionDisclosure>
             </Card>
           ) : null}
 
           {selected ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <Disclosure defaultExpanded>
-                <Disclosure.Heading>
-                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
-                    <span className="inline-flex items-center gap-2">
+              <FormSectionDisclosure
+  title={<><span className="inline-flex items-center gap-2">
                       <PencilLine size={14} />
                       Edit {selected.public_id}
-                    </span>
-                    <Disclosure.Indicator />
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-3 flex items-center justify-between gap-2">
+                    </span></>}
+>
+<div className="mb-3 flex items-center justify-between gap-2">
                       <p className="cb-title text-xl">Edit {selected.public_id}</p>
                 <Chip variant="flat" color={selected.is_published ? "success" : "warning"}>
                   {selected.is_published ? "published" : "draft"}
@@ -278,9 +265,7 @@ export function PostsManagementPage() {
                   </Button>
                 </div>
               ) : null}
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
+</FormSectionDisclosure>
             </Card>
           ) : null}
         </section>

@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Disclosure } from "@heroui/react";
+import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CalendarArrowUp,
@@ -20,6 +20,7 @@ import {
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import {
   approveVacation,
@@ -326,19 +327,13 @@ export function VacationsPage() {
                 <section className="space-y-4">
           {canSubmit ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <Disclosure>
-                <Disclosure.Heading>
-                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
-                    <span className="inline-flex items-center gap-2">
+              <FormSectionDisclosure
+  title={<><span className="inline-flex items-center gap-2">
                       <Plus size={14} />
                       Submit Vacation Request
-                    </span>
-                    <Disclosure.Indicator />
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <form className="space-y-3" onSubmit={handleCreate}>
+                    </span></>}
+>
+<form className="space-y-3" onSubmit={handleCreate}>
                       <FormInput
                         name="leaveDate"
                         type="date"
@@ -364,27 +359,19 @@ export function VacationsPage() {
                         Submit Request
                       </Button>
                     </form>
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
+</FormSectionDisclosure>
             </Card>
           ) : null}
 
           {selectedVacation && (canApprove || canDeny || canCancel) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <Disclosure defaultExpanded>
-                <Disclosure.Heading>
-                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
-                    <span className="inline-flex items-center gap-2">
+              <FormSectionDisclosure
+  title={<><span className="inline-flex items-center gap-2">
                       <CalendarCheck2 size={14} />
                       Review Request {selectedVacation.public_id}
-                    </span>
-                    <Disclosure.Indicator />
-                  </Button>
-                </Disclosure.Heading>
-                <Disclosure.Content>
-                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <FormTextarea
+                    </span></>}
+>
+<FormTextarea
                       rows={3}
                       value={reviewComment}
                       onChange={(event) => setReviewComment(event.target.value)}
@@ -428,9 +415,7 @@ export function VacationsPage() {
                         </Button>
                       ) : null}
                     </div>
-                  </Disclosure.Body>
-                </Disclosure.Content>
-              </Disclosure>
+</FormSectionDisclosure>
             </Card>
           ) : null}
 
