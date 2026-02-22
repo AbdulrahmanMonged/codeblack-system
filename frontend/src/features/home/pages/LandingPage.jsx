@@ -1,5 +1,6 @@
-import { Button, Card, Chip } from "@heroui/react";
-import { ArrowRight, FileText, LogIn, ScrollText, ShieldAlert } from "lucide-react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { ArrowRight, FileText, ScrollText, ShieldAlert } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useSWR from "swr";
@@ -78,13 +79,21 @@ export function LandingPage() {
             ) : (
               <Button
                 color="warning"
-                startContent={<LogIn size={15} />}
-                endContent={<ArrowRight size={14} />}
                 onPress={handleSignIn}
-                isLoading={isSignInRedirecting}
+                isPending={isSignInRedirecting}
                 isDisabled={isSignInRedirecting}
               >
-                Continue With Discord
+                {({ isPending }) => (
+                  <>
+                    {isPending ? (
+                      <Spinner color="current" size="sm" />
+                    ) : (
+                      <Icon icon="ri:discord-fill" width="16" height="16" />
+                    )}
+                    <span>Continue With Discord</span>
+                    {!isPending ? <ArrowRight size={14} /> : null}
+                  </>
+                )}
               </Button>
             )}
             <Button variant="ghost" startContent={<FileText size={15} />} onPress={() => navigate("/applications/new")}>

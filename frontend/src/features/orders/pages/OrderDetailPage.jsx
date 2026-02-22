@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { CheckCircle2, CircleX, ExternalLink, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -169,22 +169,30 @@ export function OrderDetailPage() {
             <div className="flex flex-wrap gap-2">
               <Button
                 color="success"
-                startContent={<CheckCircle2 size={14} />}
-                isLoading={isDeciding}
+                isPending={isDeciding}
                 isDisabled={!canAccept || isDeciding}
                 onPress={() => handleDecision("accepted")}
               >
-                Accept
+                {({ isPending }) => (
+                  <>
+                    {isPending ? <Spinner color="current" size="sm" /> : <CheckCircle2 size={14} />}
+                    {isPending ? "Processing..." : "Accept"}
+                  </>
+                )}
               </Button>
               <Button
                 color="danger"
                 variant="flat"
-                startContent={<CircleX size={14} />}
-                isLoading={isDeciding}
+                isPending={isDeciding}
                 isDisabled={!canDeny || isDeciding}
                 onPress={() => handleDecision("denied")}
               >
-                Deny
+                {({ isPending }) => (
+                  <>
+                    {isPending ? <Spinner color="current" size="sm" /> : <CircleX size={14} />}
+                    {isPending ? "Processing..." : "Deny"}
+                  </>
+                )}
               </Button>
             </div>
           </div>

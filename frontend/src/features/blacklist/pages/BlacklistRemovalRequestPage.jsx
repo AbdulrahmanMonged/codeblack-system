@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import dayjs from "dayjs";
 import { ArrowRight, RotateCcw, ShieldAlert } from "lucide-react";
@@ -126,9 +126,15 @@ export function BlacklistRemovalRequestPage() {
                   color="warning"
                   className="sm:self-end"
                   onPress={runCheck}
-                  isLoading={isChecking}
+                  isPending={isChecking}
+                  isDisabled={isChecking}
                 >
-                  Check Eligibility
+                  {({ isPending }) => (
+                    <>
+                      {isPending ? <Spinner color="current" size="sm" /> : null}
+                      {isPending ? "Checking..." : "Check Eligibility"}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -158,8 +164,13 @@ export function BlacklistRemovalRequestPage() {
                 >
                   Start Over
                 </Button>
-                <Button type="submit" color="warning" isLoading={isSubmitting}>
-                  Submit Request
+                <Button type="submit" color="warning" isPending={isSubmitting} isDisabled={isSubmitting}>
+                  {({ isPending }) => (
+                    <>
+                      {isPending ? <Spinner color="current" size="sm" /> : null}
+                      {isPending ? "Submitting..." : "Submit Request"}
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

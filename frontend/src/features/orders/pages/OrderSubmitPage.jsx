@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { CheckCircle2, Link2, ShieldAlert, UploadCloud } from "lucide-react";
 import { useState } from "react";
@@ -256,10 +256,15 @@ export function OrderSubmitPage() {
               <Button
                 type="submit"
                 color="warning"
-                isLoading={isSubmitting}
-                startContent={<UploadCloud size={15} />}
+                isPending={isSubmitting}
+                isDisabled={isSubmitting}
               >
-                Submit Order
+                {({ isPending }) => (
+                  <>
+                    {isPending ? <Spinner color="current" size="sm" /> : <UploadCloud size={15} />}
+                    {isPending ? "Submitting..." : "Submit Order"}
+                  </>
+                )}
               </Button>
             </div>
           </form>

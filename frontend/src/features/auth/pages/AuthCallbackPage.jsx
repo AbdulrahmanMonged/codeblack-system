@@ -162,12 +162,16 @@ export function AuthCallbackPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   color="warning"
-                  isLoading={isRetryingSignIn}
+                  isPending={isRetryingSignIn}
                   isDisabled={isRetryingSignIn}
-                  startContent={<RefreshCw size={15} />}
                   onPress={handleRetrySignIn}
                 >
-                  Try Sign-In Again
+                  {({ isPending }) => (
+                    <>
+                      {isPending ? <Spinner color="current" size="sm" /> : <RefreshCw size={15} />}
+                      {isPending ? "Redirecting..." : "Try Sign-In Again"}
+                    </>
+                  )}
                 </Button>
                 <Button as={Link} to="/" variant="ghost">
                   Return Home

@@ -1,6 +1,7 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
+import { useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -27,6 +28,7 @@ export function VerifyAccountPage() {
   const sessionStatus = useAppSelector(selectSessionStatus);
   const isVerified = useAppSelector(selectIsVerified);
   const currentUser = useAppSelector(selectCurrentUser);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     data: currentRequest,
@@ -65,6 +67,7 @@ export function VerifyAccountPage() {
       toast.error("All fields are required.");
       return;
     }
+    setIsSubmitting(true);
     try {
       await createVerificationRequest(payload);
       await refreshCurrentRequest();
@@ -72,6 +75,8 @@ export function VerifyAccountPage() {
       toast.success("Verification request submitted.");
     } catch (error) {
       toast.error(extractApiErrorMessage(error, "Failed to submit verification request"));
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -106,7 +111,7 @@ export function VerifyAccountPage() {
             name="accountName"
             placeholder="Account name"
             defaultValue={currentRequest?.account_name || ""}
-            isDisabled={isVerificationLocked}
+            isDisabled={isVerificationLocked || isSubmitting}
             className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
           />
           <FormInput
@@ -114,7 +119,7 @@ export function VerifyAccountPage() {
             name="mtaSerial"
             placeholder="MTA serial"
             defaultValue={currentRequest?.mta_serial || ""}
-            isDisabled={isVerificationLocked}
+            isDisabled={isVerificationLocked || isSubmitting}
             className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
           />
           <FormInput
@@ -122,11 +127,21 @@ export function VerifyAccountPage() {
             name="forumUrl"
             placeholder="Forum profile URL"
             defaultValue={currentRequest?.forum_url || ""}
-            isDisabled={isVerificationLocked}
+            isDisabled={isVerificationLocked || isSubmitting}
             className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
           />
-          <Button type="submit" color="warning" isDisabled={isVerificationLocked}>
-            Submit Request
+          <Button
+            type="submit"
+            color="warning"
+            isPending={isSubmitting}
+            isDisabled={isVerificationLocked || isSubmitting}
+          >
+            {({ isPending }) => (
+              <>
+                {isPending ? <Spinner color="current" size="sm" /> : null}
+                {isPending ? "Submitting..." : "Submit Request"}
+              </>
+            )}
           </Button>
         </form>
       </Card>
