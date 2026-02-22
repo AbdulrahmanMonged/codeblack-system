@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 
 from bot.core.celery_app import celery_app
+from bot.tasks.async_runner import run_async
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ def aggregate_daily():
     Aggregate daily activity stats and push summary to Redis Stream.
     Runs at 00:05 UTC via Celery Beat.
     """
-    import asyncio
     from bot.core.redis import RedisManager
 
     async def _run():
@@ -45,13 +45,12 @@ def aggregate_daily():
 
         return stats
 
-    return asyncio.run(_run())
+    return run_async(_run())
 
 
 @celery_app.task
 def check_inactive_players(days_threshold: int = 7):
     """Check for inactive players and push alerts."""
-    import asyncio
     from bot.core.redis import RedisManager
 
     async def _run():
@@ -80,4 +79,4 @@ def check_inactive_players(days_threshold: int = 7):
 
         return {"count": len(inactive), "players": inactive}
 
-    return asyncio.run(_run())
+    return run_async(_run())

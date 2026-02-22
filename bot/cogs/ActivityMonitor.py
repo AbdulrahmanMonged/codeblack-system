@@ -65,7 +65,10 @@ class ActivityMonitor(commands.Cog):
     async def _handle_discord_event(self, event_data):
         player_name = event_data["player_name"]
         event_type = event_data["event_type"]
-        player_service = self.bot.player_service
+        player_service = getattr(self.bot, "player_service", None)
+        if player_service is None:
+            logger.debug("Skipping discord activity event: player service not initialized")
+            return
 
         logger.debug(f"Discord Event: {player_name} - {event_type}")
 
@@ -95,8 +98,11 @@ class ActivityMonitor(commands.Cog):
         if current_time - self.cache_last_updated < self.cache_update_interval:
             return
 
-        scraper = self.bot.scraper_service
-        player_service = self.bot.player_service
+        scraper = getattr(self.bot, "scraper_service", None)
+        player_service = getattr(self.bot, "player_service", None)
+        if scraper is None or player_service is None:
+            logger.debug("Skipping player cache refresh: services are not initialized")
+            return
 
         result = await scraper.fetch_players_by_group(group_filter="REDACTED")
         if not result:
@@ -118,7 +124,11 @@ class ActivityMonitor(commands.Cog):
         logger.info(f"Player cache updated ({len(new_cache)} players)")
 
     async def _fetch_account_name_for_player(self, player_name):
-        player_service = self.bot.player_service
+        player_service = getattr(self.bot, "player_service", None)
+        scraper = getattr(self.bot, "scraper_service", None)
+        if player_service is None or scraper is None:
+            logger.debug("Skipping player fetch fallback: services are not initialized")
+            return None
 
         # Try DB first
         account_name = await player_service.resolve_account_name(player_name)
@@ -127,7 +137,6 @@ class ActivityMonitor(commands.Cog):
             return account_name
 
         # Fallback: website
-        scraper = self.bot.scraper_service
         result = await scraper.fetch_players_by_group(group_filter="REDACTED")
         if not result:
             return None
@@ -145,7 +154,11 @@ class ActivityMonitor(commands.Cog):
         return None
 
     async def _handle_login(self, player_name, account_name):
-        activity_service = self.bot.activity_service
+        activity_service = getattr(self.bot, "activity_service", None)
+        if activity_service is None:
+            logger.debug("Skipping login record: activity service not initialized")
+            return
+
         current_time = time.time()
 
         redis_key = f"REDACTED:activity:online:{account_name}"
@@ -171,7 +184,11 @@ class ActivityMonitor(commands.Cog):
         await activity_service.record_login(account_name, player_name, login_dt)
 
     async def _handle_logout(self, player_name, account_name):
-        activity_service = self.bot.activity_service
+        activity_service = getattr(self.bot, "activity_service", None)
+        if activity_service is None:
+            logger.debug("Skipping logout record: activity service not initialized")
+            return
+
         current_time = time.time()
 
         redis_key = f"REDACTED:activity:online:{account_name}"
@@ -234,8 +251,9 @@ class ActivityMonitor(commands.Cog):
         logger.error(f"Error ({self.error_count}/{self.max_errors}): {error_msg}")
 
         if self.error_count >= self.max_errors:
-            logger.critical(f"Error limit reached. Stopping monitor task.")
+            logger.critical("Error limit reached. Stopping monitor task.")
             self.monitor_player_activity.cancel()
+
 
 
 def setup(bot):

@@ -52,53 +52,83 @@ def create_bot() -> "discord.Bot":
         ),
     )
 
+    bot.redis = None
+    bot.ipc = None
+    bot.session_manager = None
+    bot.http_client = None
+    bot.forum_service = None
+    bot.scraper_service = None
+    bot.player_service = None
+    bot.activity_service = None
+    bot.event_service = None
+    bot.ipc_command_handler = None
+    bot.ipc_command_task = None
+    bot.runtime_initialized = False
+    bot.runtime_init_lock = asyncio.Lock()
+
+    async def initialize_runtime() -> None:
+        if bot.runtime_initialized:
+            return
+        async with bot.runtime_init_lock:
+            if bot.runtime_initialized:
+                return
+
+            logger.info("Initializing runtime services")
+            settings = get_settings()
+
+            # Initialize Redis
+            await RedisManager.initialize()
+            logger.info("Redis initialized")
+
+            # Initialize Database
+            await DatabaseManager.initialize()
+            logger.info("Database initialized")
+
+            # Initialize Cloudflare session manager + HTTP client
+            session_mgr = SessionManager()
+            session_mgr.set_redis(RedisManager)
+            http_client = HttpClient(session_mgr)
+            if settings.CF_PROXY:
+                http_client.set_proxy(settings.CF_PROXY)
+                logger.info(
+                    "HTTP client proxy configured for Cloudflare-protected requests"
+                )
+
+            # Initialize IPC manager
+            ipc = IPCManager()
+            await ipc.initialize()
+            logger.info("IPC streams initialized")
+
+            # Attach infrastructure to bot for cog access
+            bot.redis = RedisManager
+            bot.ipc = ipc
+            bot.session_manager = session_mgr
+            bot.http_client = http_client
+
+            if bot.ipc_command_task is None or bot.ipc_command_task.done():
+                bot.ipc_command_handler = IPCCommandHandler(ipc, bot)
+                bot.ipc_command_task = asyncio.create_task(bot.ipc_command_handler.run())
+                logger.info("IPC command listener started")
+
+            # Initialize services
+            bot.forum_service = ForumService(http_client, RedisManager)
+            bot.scraper_service = ScraperService(http_client)
+            bot.player_service = PlayerService()
+            bot.activity_service = ActivityService(ipc)
+            bot.event_service = EventService(ipc)
+
+            bot.runtime_initialized = True
+            logger.info("All services initialized")
+
+    async def _setup_hook() -> None:
+        await initialize_runtime()
+
+    bot.setup_hook = _setup_hook
+
     @bot.event
     async def on_connect():
         logger.info("Connected to Discord")
-        settings = get_settings()
-
-        # Initialize Redis
-        await RedisManager.initialize()
-        logger.info("Redis initialized")
-
-        # Initialize Database
-        await DatabaseManager.initialize()
-        logger.info("Database initialized")
-
-        # Initialize Cloudflare session manager + HTTP client
-        session_mgr = SessionManager()
-        session_mgr.set_redis(RedisManager)
-        http_client = HttpClient(session_mgr)
-        if settings.CF_PROXY:
-            http_client.set_proxy(settings.CF_PROXY)
-            logger.info("HTTP client proxy configured for Cloudflare-protected requests")
-
-        # Initialize IPC manager
-        ipc = IPCManager()
-        await ipc.initialize()
-        logger.info("IPC streams initialized")
-
-        # Attach infrastructure to bot for cog access
-        bot.redis = RedisManager
-        bot.ipc = ipc
-        bot.session_manager = session_mgr
-        bot.http_client = http_client
-
-        if not hasattr(bot, "ipc_command_task") or bot.ipc_command_task.done():
-            bot.ipc_command_handler = IPCCommandHandler(ipc, bot)
-            bot.ipc_command_task = asyncio.create_task(
-                bot.ipc_command_handler.run()
-            )
-            logger.info("IPC command listener started")
-
-        # Initialize services
-        bot.forum_service = ForumService(http_client, RedisManager)
-        bot.scraper_service = ScraperService(http_client)
-        bot.player_service = PlayerService()
-        bot.activity_service = ActivityService(ipc)
-        bot.event_service = EventService(ipc)
-
-        logger.info("All services initialized")
+        await initialize_runtime()
 
     return bot
 
