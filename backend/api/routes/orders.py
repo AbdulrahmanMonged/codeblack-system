@@ -5,7 +5,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.encoders import jsonable_encoder
 
-from backend.api.deps.auth import require_permissions
+from backend.api.deps.auth import require_any_permissions, require_permissions
 from backend.api.schemas.orders import OrderDecisionRequest, OrderResponse
 from backend.application.dto.auth import AuthenticatedPrincipal
 from backend.application.services.order_service import OrderService
@@ -42,7 +42,7 @@ async def submit_order(
         completed_orders=completed_orders,
         proof_upload=uploaded,
     )
-    await cache.invalidate_tags("orders", "review_queue")
+    await cache.invalidate_tags("orders", "review_queue", f"orders_user:{principal.user_id}")
     return OrderResponse(**row)
 
 
@@ -70,6 +70,44 @@ async def list_orders(
         value=jsonable_encoder(payload),
         ttl_seconds=settings.BACKEND_CACHE_AUTH_LIST_TTL_SECONDS,
         tags={"orders"},
+    )
+    return [OrderResponse(**row) for row in payload]
+
+
+@router.get("/mine", response_model=list[OrderResponse])
+async def list_my_orders(
+    status: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    principal: AuthenticatedPrincipal = Depends(require_any_permissions("orders.submit", "orders.read")),
+    service: OrderService = Depends(get_order_service),
+):
+    settings = get_settings()
+    cache_key = cache.build_key(
+        "orders_mine_list",
+        {
+            "user_id": principal.user_id,
+            "status": status,
+            "limit": limit,
+            "offset": offset,
+        },
+    )
+    cached = await cache.get_json(cache_key)
+    if cached is not None:
+        return [OrderResponse(**row) for row in cached]
+
+    rows = await service.list_orders_by_submitter(
+        submitted_by_user_id=principal.user_id,
+        status=status,
+        limit=limit,
+        offset=offset,
+    )
+    payload = [OrderResponse(**row).model_dump(mode="json") for row in rows]
+    await cache.set_json(
+        key=cache_key,
+        value=jsonable_encoder(payload),
+        ttl_seconds=settings.BACKEND_CACHE_AUTH_LIST_TTL_SECONDS,
+        tags={"orders", f"orders_user:{principal.user_id}"},
     )
     return [OrderResponse(**row) for row in payload]
 
@@ -112,7 +150,7 @@ async def decide_order(
         decision=payload.decision,
         reason=payload.reason,
     )
-    await cache.invalidate_tags("orders", "review_queue")
+    await cache.invalidate_tags("orders", "review_queue", f"orders_user:{row['submitted_by_user_id']}")
     return OrderResponse(**row)
 
 

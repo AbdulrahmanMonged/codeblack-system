@@ -63,6 +63,24 @@ class OrderService:
             rows = await repo.list_orders(status=status, limit=limit, offset=offset)
             return [self._order_to_dict(row) for row in rows]
 
+    async def list_orders_by_submitter(
+        self,
+        *,
+        submitted_by_user_id: int,
+        status: str | None,
+        limit: int,
+        offset: int,
+    ) -> list[dict]:
+        async with get_session() as session:
+            repo = OrderRepository(session)
+            rows = await repo.list_orders_by_submitter(
+                submitted_by_user_id=submitted_by_user_id,
+                status=status,
+                limit=limit,
+                offset=offset,
+            )
+            return [self._order_to_dict(row) for row in rows]
+
     async def get_order(self, *, public_id: str) -> dict:
         async with get_session() as session:
             repo = OrderRepository(session)

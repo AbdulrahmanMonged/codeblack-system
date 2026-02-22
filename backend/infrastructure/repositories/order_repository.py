@@ -90,6 +90,25 @@ class OrderRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def list_orders_by_submitter(
+        self,
+        *,
+        submitted_by_user_id: int,
+        status: str | None,
+        limit: int,
+        offset: int,
+    ) -> Sequence[Order]:
+        stmt = (
+            select(Order)
+            .where(Order.submitted_by_user_id == submitted_by_user_id)
+            .order_by(Order.submitted_at.desc())
+        )
+        if status:
+            stmt = stmt.where(Order.status == status)
+        stmt = stmt.limit(limit).offset(offset)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
     async def add_order_review(
         self,
         *,
