@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Separator } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CalendarClock,
@@ -446,14 +446,17 @@ export function ActivitiesPage() {
                     />
                     <div className="mt-3 flex flex-wrap gap-2">
                       {canApprove ? (
-                        <Button
-                          color="warning"
-                          variant="flat"
-                          startContent={<CheckCircle2 size={14} />}
-                          onPress={handleApprove}
-                        >
-                          Approve / Schedule
-                        </Button>
+                        <>
+                          <Button
+                            color="warning"
+                            variant="flat"
+                            startContent={<CheckCircle2 size={14} />}
+                            onPress={handleApprove}
+                          >
+                            Approve / Schedule
+                          </Button>
+                          {canReject ? <Separator orientation="vertical" className="h-5 bg-white/20" /> : null}
+                        </>
                       ) : null}
                       {canReject ? (
                         <Button

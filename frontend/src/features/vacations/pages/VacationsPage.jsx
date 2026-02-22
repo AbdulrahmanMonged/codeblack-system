@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Separator } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CalendarArrowUp,
@@ -131,6 +131,11 @@ export function VacationsPage() {
     () => pageVacationRows.find((row) => row.public_id === selectedPublicId) || null,
     [pageVacationRows, selectedPublicId],
   );
+
+  const canCancelOwnSelected =
+    canCancel &&
+    selectedVacation &&
+    selectedVacation.requester_user_id === Number(currentUser?.userId);
 
   useEffect(() => {
     setPage(1);
@@ -475,6 +480,7 @@ export function VacationsPage() {
                       >
                         Approve
                       </Button>
+                      <Separator orientation="vertical" className="h-5 bg-white/20" />
                       <Button
                         variant="flat"
                         startContent={<CalendarArrowUp size={14} />}
@@ -482,10 +488,14 @@ export function VacationsPage() {
                       >
                         Mark Returned
                       </Button>
+                      {canDeny || canCancelOwnSelected ? (
+                        <Separator orientation="vertical" className="h-5 bg-white/20" />
+                      ) : null}
                     </>
                   ) : null}
                   {canDeny ? (
-                    <Button
+                    <>
+                      <Button
                       color="danger"
                       variant="flat"
                       startContent={<CircleX size={14} />}
@@ -493,9 +503,10 @@ export function VacationsPage() {
                     >
                       Deny
                     </Button>
+                    {canCancelOwnSelected ? <Separator orientation="vertical" className="h-5 bg-white/20" /> : null}
+                    </>
                   ) : null}
-                  {canCancel &&
-                  selectedVacation.requester_user_id === Number(currentUser?.userId) ? (
+                  {canCancelOwnSelected ? (
                     <Button variant="ghost" onPress={handleCancel}>
                       Cancel Own Request
                     </Button>

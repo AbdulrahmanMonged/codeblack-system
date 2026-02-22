@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, Chip } from "@heroui/react";
+import { Avatar, Button, Card, Chip, Separator } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import dayjs from "dayjs";
@@ -345,6 +345,7 @@ export function VotingContextPage() {
                       <Button color="warning" variant="flat" startContent={<CheckCircle2 size={14} />} onPress={() => handleVote("yes")}>
                         Vote YES
                       </Button>
+                      <Separator orientation="vertical" className="h-5 bg-white/20" />
                       <Button color="danger" variant="flat" startContent={<CircleX size={14} />} onPress={() => handleVote("no")}>
                         Vote NO
                       </Button>
@@ -370,9 +371,12 @@ export function VotingContextPage() {
                     />
                     <div className="mt-3 flex flex-wrap gap-2">
                       {canClose ? (
-                        <Button color="danger" variant="flat" startContent={<LockKeyhole size={14} />} onPress={handleClose}>
-                          Close
-                        </Button>
+                        <>
+                          <Button color="danger" variant="flat" startContent={<LockKeyhole size={14} />} onPress={handleClose}>
+                            Close
+                          </Button>
+                          {canReopen ? <Separator orientation="vertical" className="h-5 bg-white/20" /> : null}
+                        </>
                       ) : null}
                       {canReopen ? (
                         <Button color="warning" variant="flat" startContent={<Unlock size={14} />} onPress={handleReopen}>
@@ -437,9 +441,12 @@ export function VotingContextPage() {
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {canAcceptApplication ? (
-                        <Button color="success" variant="flat" onPress={() => handleDecision("accepted")}>
-                          Accept
-                        </Button>
+                        <>
+                          <Button color="success" variant="flat" onPress={() => handleDecision("accepted")}>
+                            Accept
+                          </Button>
+                          {canDeclineApplication ? <Separator orientation="vertical" className="h-5 bg-white/20" /> : null}
+                        </>
                       ) : null}
                       {canDeclineApplication ? (
                         <Button color="danger" variant="flat" onPress={() => handleDecision("declined")}>

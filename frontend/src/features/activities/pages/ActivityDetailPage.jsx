@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Separator } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CheckCircle2,
@@ -173,13 +173,16 @@ export function ActivityDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             {canRead ? (
-              <Button
-                variant="ghost"
-                startContent={<RefreshCw size={15} />}
-                onPress={() => refreshActivity()}
-              >
-                Refresh
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  startContent={<RefreshCw size={15} />}
+                  onPress={() => refreshActivity()}
+                >
+                  Refresh
+                </Button>
+                <Separator orientation="vertical" className="h-6 bg-white/20" />
+              </>
             ) : null}
             <Button as={Link} to="/activities" variant="flat">
               Back
@@ -244,14 +247,17 @@ export function ActivityDetailPage() {
           />
           <div className="mt-3 flex flex-wrap gap-2">
             {canApprove ? (
-              <Button
-                color="warning"
-                variant="flat"
-                startContent={<CheckCircle2 size={14} />}
-                onPress={handleApprove}
-              >
-                Approve / Schedule
-              </Button>
+              <>
+                <Button
+                  color="warning"
+                  variant="flat"
+                  startContent={<CheckCircle2 size={14} />}
+                  onPress={handleApprove}
+                >
+                  Approve / Schedule
+                </Button>
+                {canReject ? <Separator orientation="vertical" className="h-5 bg-white/20" /> : null}
+              </>
             ) : null}
             {canReject ? (
               <Button

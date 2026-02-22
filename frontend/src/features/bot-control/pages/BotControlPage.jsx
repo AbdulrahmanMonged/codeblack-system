@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Separator } from "@heroui/react";
 import {
   Activity,
   ListRestart,
@@ -408,6 +408,9 @@ export function BotControlPage() {
                   >
                     Trigger Forum Sync
                   </Button>
+                ) : null}
+                {canTriggerForumSync && canTriggerCopRefresh ? (
+                  <Separator orientation="vertical" className="h-5 bg-white/20" />
                 ) : null}
                 {canTriggerCopRefresh ? (
                   <Button

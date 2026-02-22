@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Separator, Spinner } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
@@ -629,6 +629,7 @@ export function ReviewQueuePage() {
               >
                 Accept
               </Button>
+              <Separator orientation="vertical" className="h-5 bg-white/20" />
               <Button
                 color="danger"
                 variant="flat"
@@ -652,6 +653,7 @@ export function ReviewQueuePage() {
               >
                 Accept
               </Button>
+              <Separator orientation="vertical" className="h-5 bg-white/20" />
               <Button
                 color="danger"
                 variant="flat"
@@ -675,6 +677,7 @@ export function ReviewQueuePage() {
               >
                 Approve
               </Button>
+              <Separator orientation="vertical" className="h-5 bg-white/20" />
               <Button
                 color="danger"
                 variant="flat"
@@ -698,6 +701,7 @@ export function ReviewQueuePage() {
               >
                 Approve
               </Button>
+              <Separator orientation="vertical" className="h-5 bg-white/20" />
               <Button
                 color="danger"
                 variant="flat"
@@ -721,6 +725,7 @@ export function ReviewQueuePage() {
               >
                 Approve
               </Button>
+              <Separator orientation="vertical" className="h-5 bg-white/20" />
               <Button
                 color="danger"
                 variant="flat"
@@ -756,6 +761,7 @@ export function ReviewQueuePage() {
               >
                 Approve
               </Button>
+              <Separator orientation="vertical" className="h-5 bg-white/20" />
               <Button
                 color="danger"
                 variant="flat"

@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Separator, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { Check, ImagePlus, PencilLine, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -418,6 +418,7 @@ export function PostsManagementPage() {
                         </>
                       )}
                     </Button>
+                    <Separator orientation="vertical" className="h-5 bg-white/20" />
                     <Button
                       variant="ghost"
                       isDisabled={isPublishing}

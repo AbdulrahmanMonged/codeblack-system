@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Separator, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { CheckCircle2, Link2, ShieldAlert, UploadCloud } from "lucide-react";
 import { useState } from "react";
@@ -266,6 +266,7 @@ export function OrderSubmitPage() {
               >
                 Clear form
               </Button>
+              <Separator orientation="vertical" className="h-6 bg-white/20" />
               <Button
                 type="submit"
                 color="warning"
