@@ -9,6 +9,7 @@ from backend.core.database import get_session
 from backend.core.errors import ApiException
 from backend.infrastructure.repositories.blacklist_repository import BlacklistRepository
 from backend.infrastructure.repositories.order_repository import OrderRepository
+from backend.infrastructure.repositories.roster_repository import RosterRepository
 
 
 class BlacklistService:
@@ -43,6 +44,7 @@ class BlacklistService:
 
         async with get_session() as session:
             repo = BlacklistRepository(session)
+            roster_repo = RosterRepository(session)
             existing = await repo.find_active_by_account_name(identity_value)
             if existing is not None:
                 raise ApiException(
@@ -50,6 +52,15 @@ class BlacklistService:
                     error_code="BLACKLIST_ENTRY_ALREADY_ACTIVE",
                     message=f"Account {identity_value} is already blacklisted",
                 )
+
+            if player_id is not None:
+                player = await roster_repo.get_player_by_id(player_id)
+                if player is None:
+                    raise ApiException(
+                        status_code=422,
+                        error_code="PLAYER_NOT_FOUND",
+                        message=f"Player {player_id} not found",
+                    )
 
             sequence = await repo.get_next_sequence()
             blacklist_player_id = self._format_blacklist_player_id(sequence)
