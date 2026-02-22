@@ -1,6 +1,5 @@
 import {
   AlertDialog,
-  Autocomplete,
   Button,
   Card,
   Chip,
@@ -103,6 +102,7 @@ export function RoleMatrixPage() {
   const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [permissionSearch, setPermissionSearch] = useState("");
 
   const {
     data: roleMatrix,
@@ -146,6 +146,20 @@ export function RoleMatrixPage() {
     () => groupPermissionKeys(allPermissionKeys),
     [allPermissionKeys],
   );
+  const filteredGroupedPermissions = useMemo(() => {
+    const query = String(permissionSearch || "").trim();
+    if (!query) {
+      return groupedPermissions;
+    }
+
+    return groupedPermissions
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((permissionKey) => contains(permissionKey, query)),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [groupedPermissions, permissionSearch, contains]);
+
 
   if (!canRead) {
     return (
@@ -186,21 +200,48 @@ export function RoleMatrixPage() {
     const nextPermissions = normalizeSelectionToArray(selectionKeys, allPermissionKeys);
     setDraftPermissions(sortUniquePermissions(nextPermissions));
   }
-  function handleSelectSectionPermissions(sectionItems) {
-    if (!canWrite) {
-      return;
-    }
-    setDraftPermissions((previous) => sortUniquePermissions([...previous, ...sectionItems]));
+
+  function handlePermissionSearchChange(value) {
+    const nextValue =
+      typeof value === "string" ? value : String(value?.target?.value || "");
+    setPermissionSearch(nextValue);
   }
 
-  function handleClearSectionPermissions(sectionItems) {
+  function handleSelectSectionPermissions(sectionLabel, sectionItems) {
     if (!canWrite) {
       return;
     }
+
+    setDraftPermissions((previous) => {
+      const next = sortUniquePermissions([...previous, ...sectionItems]);
+      const addedCount = Math.max(0, next.length - previous.length);
+      if (addedCount > 0) {
+        toast.success(`Selected ${addedCount} permission(s) from ${sectionLabel}`);
+      } else {
+        toast.info(`${sectionLabel} is already fully selected`);
+      }
+      return next;
+    });
+  }
+
+  function handleClearSectionPermissions(sectionLabel, sectionItems) {
+    if (!canWrite) {
+      return;
+    }
+
     const sectionSet = new Set(sectionItems.map((item) => String(item).trim()).filter(Boolean));
-    setDraftPermissions((previous) =>
-      sortUniquePermissions(previous.filter((permissionKey) => !sectionSet.has(permissionKey))),
-    );
+    setDraftPermissions((previous) => {
+      const next = sortUniquePermissions(
+        previous.filter((permissionKey) => !sectionSet.has(permissionKey)),
+      );
+      const removedCount = Math.max(0, previous.length - next.length);
+      if (removedCount > 0) {
+        toast.success(`Cleared ${removedCount} permission(s) from ${sectionLabel}`);
+      } else {
+        toast.info(`${sectionLabel} had no selected permissions to clear`);
+      }
+      return next;
+    });
   }
   function handleSelectAllPermissions() {
     if (!canWrite || !isOwner) {
@@ -399,7 +440,7 @@ export function RoleMatrixPage() {
                                 size="sm"
                                 variant="flat"
                                 isDisabled={!canWrite}
-                                onPress={() => handleSelectSectionPermissions(section.items)}
+                                onPress={() => handleSelectSectionPermissions(section.label, section.items)}
                               >
                                 Select Section
                               </Button>
@@ -407,7 +448,7 @@ export function RoleMatrixPage() {
                                 size="sm"
                                 variant="ghost"
                                 isDisabled={!canWrite}
-                                onPress={() => handleClearSectionPermissions(section.items)}
+                                onPress={() => handleClearSectionPermissions(section.label, section.items)}
                               >
                                 Clear
                               </Button>
@@ -418,56 +459,43 @@ export function RoleMatrixPage() {
                     </div>
                   ) : null}
 
-                  <Autocomplete
-                    className="w-full"
-                    placeholder="Select permissions"
-                    selectionMode="multiple"
-                    selectedKeys={new Set(draftPermissions)}
-                    isDisabled={!canWrite || !allPermissionKeys.length}
-                    onSelectionChange={handlePermissionSelectionChange}
+                  <SearchField
+                    name="permission-search"
+                    value={permissionSearch}
+                    onChange={handlePermissionSearchChange}
+                    variant="secondary"
                   >
-                    <Label>Permissions</Label>
-                    <Autocomplete.Trigger>
-                      <Autocomplete.Value />
-                      <Autocomplete.ClearButton />
-                      <Autocomplete.Indicator />
-                    </Autocomplete.Trigger>
-                    <Autocomplete.Popover>
-                      <Autocomplete.Filter filter={contains}>
-                        <SearchField autoFocus name="search" variant="secondary">
-                          <SearchField.Group>
-                            <SearchField.SearchIcon />
-                            <SearchField.Input placeholder="Search permissions..." />
-                            <SearchField.ClearButton />
-                          </SearchField.Group>
-                        </SearchField>
+                    <Label>Search permissions</Label>
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Search permissions..." />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
 
-                        <ListBox
-                          selectionMode="multiple"
-                          renderEmptyState={() => <EmptyState>No results found</EmptyState>}
-                        >
-                          {groupedPermissions.map((section, sectionIndex) => (
-                            <Fragment key={section.key}>
-                              <ListBox.Section>
-                                <Header>{section.label}</Header>
-                                {section.items.map((permissionKey) => (
-                                  <ListBox.Item
-                                    key={permissionKey}
-                                    id={permissionKey}
-                                    textValue={permissionKey}
-                                  >
-                                    {permissionKey}
-                                    <ListBox.ItemIndicator />
-                                  </ListBox.Item>
-                                ))}
-                              </ListBox.Section>
-                              {sectionIndex < groupedPermissions.length - 1 ? <Separator /> : null}
-                            </Fragment>
-                          ))}
-                        </ListBox>
-                      </Autocomplete.Filter>
-                    </Autocomplete.Popover>
-                  </Autocomplete>
+                  <div className="mt-3 max-h-[28rem] overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-2">
+                    <ListBox
+                      selectionMode="multiple"
+                      selectedKeys={new Set(draftPermissions)}
+                      onSelectionChange={handlePermissionSelectionChange}
+                      renderEmptyState={() => <EmptyState>No permissions found</EmptyState>}
+                    >
+                      {filteredGroupedPermissions.map((section, sectionIndex) => (
+                        <Fragment key={section.key}>
+                          <ListBox.Section>
+                            <Header>{section.label}</Header>
+                            {section.items.map((permissionKey) => (
+                              <ListBox.Item key={permissionKey} id={permissionKey} textValue={permissionKey}>
+                                {permissionKey}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox.Section>
+                          {sectionIndex < filteredGroupedPermissions.length - 1 ? <Separator /> : null}
+                        </Fragment>
+                      ))}
+                    </ListBox>
+                  </div>
 
                   {allPermissionKeys.length === 0 ? (
                     <div className="mt-3">
