@@ -30,8 +30,8 @@ class PermissionService:
             assigned = sorted(permission_map.get(role.discord_role_id, set()))
             result.append(
                 {
-                    "discord_role_id": role.discord_role_id,
-                    "guild_id": role.guild_id,
+                    "discord_role_id": str(role.discord_role_id),
+                    "guild_id": str(role.guild_id),
                     "name": role.name,
                     "position": role.position,
                     "is_active": role.is_active,
@@ -99,8 +99,8 @@ class PermissionService:
                     details={"role_sync_error": exc.error_code},
                 ) from exc
         return {
-            "discord_role_id": selected_role.discord_role_id,
-            "guild_id": selected_role.guild_id,
+            "discord_role_id": str(selected_role.discord_role_id),
+            "guild_id": str(selected_role.guild_id),
             "name": selected_role.name,
             "position": selected_role.position,
             "is_active": selected_role.is_active,
