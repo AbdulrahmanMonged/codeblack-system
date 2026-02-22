@@ -1,7 +1,8 @@
-import { Button, Chip } from "@heroui/react";
+import { Button, Chip, Spinner } from "@heroui/react";
 import { Bell, LogOut, Menu, ShieldCheck, UserCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useSWR from "swr";
+import { useState } from "react";
 import { toast } from "../ui/toast.jsx";
 import { useAppDispatch, useAppSelector } from "../../app/store/hooks.js";
 import {
@@ -26,6 +27,7 @@ export function AppHeader() {
   const permissions = useAppSelector(selectPermissions);
   const isOwner = useAppSelector(selectIsOwner);
   const forceReducedMotion = useAppSelector(selectForceReducedMotion);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const hasStaffView = hasAnyPermissionSet(
     [
@@ -48,14 +50,20 @@ export function AppHeader() {
   );
 
   async function handleLogout() {
+    if (isLoggingOut) {
+      return;
+    }
+    setIsLoggingOut(true);
     try {
       await logoutSession();
     } catch {
       // Session might already be expired; continue with local cleanup.
+    } finally {
+      dispatch(clearSession());
+      toast.success("Logged out");
+      navigate("/", { replace: true });
+      setIsLoggingOut(false);
     }
-    dispatch(clearSession());
-    toast.success("Logged out");
-    navigate("/", { replace: true });
   }
 
   return (
@@ -123,8 +131,15 @@ export function AppHeader() {
           <Button isIconOnly variant="solid" color="warning" aria-label="Profile" className="sm:hidden">
             <UserCircle2 size={16} />
           </Button>
-          <Button isIconOnly variant="ghost" aria-label="Logout" onPress={handleLogout}>
-            <LogOut size={15} />
+          <Button
+            isIconOnly
+            variant="ghost"
+            aria-label="Logout"
+            isDisabled={isLoggingOut}
+            isPending={isLoggingOut}
+            onPress={handleLogout}
+          >
+            {isLoggingOut ? <Spinner color="current" size="sm" /> : <LogOut size={15} />}
           </Button>
         </div>
       </div>
