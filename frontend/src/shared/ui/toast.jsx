@@ -1,4 +1,4 @@
-import { ToastProvider, toast as herouiToast } from "@heroui/react";
+import { toast as herouiToast } from "@heroui/react";
 
 let defaultTimeoutMs = 3500;
 
@@ -36,15 +36,11 @@ baseToast.dismiss = (key) => {
 };
 baseToast.pauseAll = () => herouiToast.pauseAll();
 baseToast.resumeAll = () => herouiToast.resumeAll();
+baseToast.setDefaultTimeout = (timeoutMs) => {
+  const parsed = Number(timeoutMs);
+  if (Number.isFinite(parsed) && parsed >= 0) {
+    defaultTimeoutMs = parsed;
+  }
+};
 
 export const toast = baseToast;
-
-export function Toaster({
-  position = "top-right",
-  duration = 3500,
-  maxVisibleToasts = 5,
-}) {
-  defaultTimeoutMs = duration;
-
-  return <ToastProvider placement={position} maxVisibleToasts={maxVisibleToasts} />;
-}

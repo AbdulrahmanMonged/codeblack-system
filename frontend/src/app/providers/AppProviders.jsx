@@ -1,7 +1,7 @@
+import { Toast } from "@heroui/react";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { SWRConfig } from "swr";
-import { Toaster } from "../../shared/ui/toast.jsx";
 import { persistor, store } from "../store/index.js";
 import { apiFetcher } from "../../core/api/http-client.js";
 import { SessionBootstrap } from "./SessionBootstrap.jsx";
@@ -20,7 +20,7 @@ export function AppProviders({ children }) {
         <SessionBootstrap>
           <SWRConfig value={swrOptions}>
             {children}
-            <Toaster position="top-right" duration={3500} />
+            <Toast.Provider placement="top-end" maxVisibleToasts={5} />
           </SWRConfig>
         </SessionBootstrap>
       </PersistGate>
