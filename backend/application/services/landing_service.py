@@ -150,11 +150,13 @@ class LandingService:
     async def list_public_roster(self, *, limit: int, offset: int) -> list[dict]:
         async with get_session() as session:
             roster_repo = RosterRepository(session)
-            memberships = await roster_repo.list_memberships()
-            active_rows = [row for row in memberships if row.status == "active"]
-            page_rows = active_rows[offset : offset + limit]
+            memberships = await roster_repo.list_memberships(
+                limit=limit,
+                offset=offset,
+                status="active",
+            )
             result: list[dict] = []
-            for membership in page_rows:
+            for membership in memberships:
                 player = await roster_repo.get_player_by_id(membership.player_id)
                 if player is None:
                     continue
