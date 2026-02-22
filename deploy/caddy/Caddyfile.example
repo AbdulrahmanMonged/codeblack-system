@@ -1,0 +1,17 @@
+# Replace __DOMAIN__ with your real domain.
+# Example: codeblack.example.com
+
+__DOMAIN__ {
+    encode zstd gzip
+
+    # Frontend static build output
+    root * __WEB_ROOT__
+
+    # Backend API
+    @api path /api/*
+    reverse_proxy @api 127.0.0.1:8000
+
+    # SPA routing fallback
+    try_files {path} /index.html
+    file_server
+}
