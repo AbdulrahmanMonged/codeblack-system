@@ -122,7 +122,7 @@ async def create_blacklist_entry(
         remarks=payload.remarks,
         actor_user_id=principal.user_id,
     )
-    await cache.invalidate_tags("blacklist", "review_queue")
+    await cache.invalidate_tags("blacklist", "review_queue", "notifications")
     return BlacklistEntryResponse(**row)
 
 
@@ -183,7 +183,7 @@ async def create_blacklist_removal_request(
         account_name=payload.account_name,
         request_text=payload.request_text,
     )
-    await cache.invalidate_tags("blacklist", "review_queue")
+    await cache.invalidate_tags("blacklist", "review_queue", "notifications")
     if precheck_key:
         await cache.invalidate_key(precheck_key)
     return BlacklistRemovalRequestResponse(**row)
@@ -241,7 +241,7 @@ async def approve_blacklist_removal_request(
         review_comment=payload.review_comment,
         reviewer_user_id=principal.user_id,
     )
-    await cache.invalidate_tags("blacklist", "review_queue")
+    await cache.invalidate_tags("blacklist", "review_queue", "notifications")
     return BlacklistRemovalRequestResponse(**row)
 
 
@@ -259,7 +259,7 @@ async def deny_blacklist_removal_request(
         review_comment=payload.review_comment,
         reviewer_user_id=principal.user_id,
     )
-    await cache.invalidate_tags("blacklist", "review_queue")
+    await cache.invalidate_tags("blacklist", "review_queue", "notifications")
     return BlacklistRemovalRequestResponse(**row)
 
 
@@ -280,7 +280,7 @@ async def update_blacklist_entry(
         remarks=payload.remarks,
         actor_user_id=principal.user_id,
     )
-    await cache.invalidate_tags("blacklist", "review_queue")
+    await cache.invalidate_tags("blacklist", "review_queue", "notifications")
     return BlacklistEntryResponse(**row)
 
 
@@ -297,5 +297,5 @@ async def remove_blacklist_entry(
         actor_user_id=principal.user_id,
         reason=payload.reason,
     )
-    await cache.invalidate_tags("blacklist", "review_queue")
+    await cache.invalidate_tags("blacklist", "review_queue", "notifications")
     return BlacklistEntryResponse(**row)

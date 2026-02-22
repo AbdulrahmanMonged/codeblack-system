@@ -19,6 +19,21 @@ export async function listVacations({
   return apiRequest(`/vacations?${query.toString()}`, { method: "GET" });
 }
 
+export async function listMyVacations({
+  status,
+  limit = 100,
+  offset = 0,
+} = {}) {
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (status) {
+    query.set("status", String(status));
+  }
+  return apiRequest(`/vacations/mine?${query.toString()}`, { method: "GET" });
+}
+
 export async function createVacation(payload) {
   return apiRequest("/vacations", {
     method: "POST",

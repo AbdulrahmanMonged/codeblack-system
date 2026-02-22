@@ -9,10 +9,11 @@ import {
   ListBox,
   SearchField,
   Separator,
+  Spinner,
   useFilter,
 } from "@heroui/react";
 import { CheckCheck, RefreshCw, Save, ShieldAlert } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -24,7 +25,29 @@ import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
-import { listRoleMatrix, updateRoleMatrix } from "../api/permissions-api.js";
+import {
+  listPermissionCatalog,
+  listRoleMatrix,
+  updateRoleMatrix,
+} from "../api/permissions-api.js";
+
+const DEFAULT_PERMISSION_BUNDLE = [
+  "activities.create",
+  "activities.read",
+  "auth.logout",
+  "auth.me",
+  "notifications.delete_own",
+  "notifications.read",
+  "orders.read",
+  "orders.submit",
+  "playerbase.read",
+  "punishments.read",
+  "vacations.read",
+  "vacations.submit",
+  "verification_requests.create",
+  "verification_requests.read",
+  "verification_requests.read_own",
+];
 
 function normalizeSelectionToArray(selection, fallback = []) {
   if (selection === "all") {
@@ -103,6 +126,8 @@ export function RoleMatrixPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [permissionSearch, setPermissionSearch] = useState("");
+  const [isSyncingRoles, setIsSyncingRoles] = useState(false);
+  const didInitialSyncRef = useRef(false);
 
   const {
     data: roleMatrix,
@@ -116,11 +141,50 @@ export function RoleMatrixPage() {
         limit: pageSize + 1,
         offset: (page - 1) * pageSize,
       }),
+    {
+      revalidateOnFocus: false,
+    },
+  );
+
+  const {
+    data: permissionCatalog,
+    error: permissionCatalogError,
+    isLoading: permissionCatalogLoading,
+    mutate: refreshPermissionCatalog,
+  } = useSWR(
+    canRead ? ["permissions-catalog"] : null,
+    () => listPermissionCatalog(),
+    {
+      revalidateOnFocus: false,
+    },
   );
 
   const roleRows = useMemo(() => toArray(roleMatrix), [roleMatrix]);
   const pageRoleRows = useMemo(() => roleRows.slice(0, pageSize), [roleRows, pageSize]);
   const hasNextPage = roleRows.length > pageSize;
+
+  useEffect(() => {
+    if (!canRead || didInitialSyncRef.current) {
+      return;
+    }
+    didInitialSyncRef.current = true;
+
+    (async () => {
+      setIsSyncingRoles(true);
+      try {
+        const syncedRows = await listRoleMatrix({
+          limit: pageSize + 1,
+          offset: (page - 1) * pageSize,
+          syncRoles: true,
+        });
+        await refreshRoleMatrix(syncedRows, { revalidate: false });
+      } catch {
+        // keep cached response path if sync fails
+      } finally {
+        setIsSyncingRoles(false);
+      }
+    })();
+  }, [canRead, page, pageSize, refreshRoleMatrix]);
 
   useEffect(() => {
     if (!roleRows.length) {
@@ -161,14 +225,11 @@ export function RoleMatrixPage() {
   );
 
   const allPermissionKeys = useMemo(
-    () => sortUniquePermissions(selectedRole?.available_permissions || []),
-    [selectedRole?.available_permissions],
+    () => sortUniquePermissions(permissionCatalog || []),
+    [permissionCatalog],
   );
 
-  const groupedPermissions = useMemo(
-    () => groupPermissionKeys(allPermissionKeys),
-    [allPermissionKeys],
-  );
+  const groupedPermissions = useMemo(() => groupPermissionKeys(allPermissionKeys), [allPermissionKeys]);
   const filteredGroupedPermissions = useMemo(() => {
     const query = String(permissionSearch || "").trim();
     if (!query) {
@@ -182,7 +243,6 @@ export function RoleMatrixPage() {
       }))
       .filter((section) => section.items.length > 0);
   }, [groupedPermissions, permissionSearch, contains]);
-
 
   if (!canRead) {
     return (
@@ -225,8 +285,7 @@ export function RoleMatrixPage() {
   }
 
   function handlePermissionSearchChange(value) {
-    const nextValue =
-      typeof value === "string" ? value : String(value?.target?.value || "");
+    const nextValue = typeof value === "string" ? value : String(value?.target?.value || "");
     setPermissionSearch(nextValue);
   }
 
@@ -266,6 +325,7 @@ export function RoleMatrixPage() {
       return next;
     });
   }
+
   function handleSelectAllPermissions() {
     if (!canWrite || !isOwner) {
       return;
@@ -280,7 +340,21 @@ export function RoleMatrixPage() {
     setDraftPermissions([]);
   }
 
+  function handleSelectDefaultPermissions() {
+    if (!canWrite) {
+      return;
+    }
 
+    const catalogSet = new Set(allPermissionKeys);
+    const validDefaults = DEFAULT_PERMISSION_BUNDLE.filter((key) => catalogSet.has(key));
+    const missing = DEFAULT_PERMISSION_BUNDLE.filter((key) => !catalogSet.has(key));
+    setDraftPermissions(sortUniquePermissions(validDefaults));
+
+    toast.success(`Default permission bundle applied (${validDefaults.length})`);
+    if (missing.length) {
+      toast.warning(`${missing.length} default key(s) are not in current permission catalog`);
+    }
+  }
 
   async function handleSavePermissions() {
     if (!selectedRole) {
@@ -289,14 +363,38 @@ export function RoleMatrixPage() {
     }
     try {
       const nextPermissions = sortUniquePermissions(draftPermissions);
-      await updateRoleMatrix(selectedRole.discord_role_id, {
+      const row = await updateRoleMatrix(selectedRole.discord_role_id, {
         permission_keys: nextPermissions,
       });
       setDraftPermissions(nextPermissions);
       toast.success("Role permissions updated");
-      await refreshRoleMatrix();
+      await refreshRoleMatrix((previous) => {
+        const existingRows = toArray(previous);
+        return existingRows.map((role) =>
+          String(role.discord_role_id) === String(row.discord_role_id)
+            ? { ...role, assigned_permissions: toArray(row.assigned_permissions) }
+            : role,
+        );
+      }, { revalidate: false });
     } catch (error) {
       toast.error(extractApiErrorMessage(error, "Failed to update role permissions"));
+    }
+  }
+
+  async function handleSyncRoles() {
+    setIsSyncingRoles(true);
+    try {
+      const syncedRows = await listRoleMatrix({
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
+        syncRoles: true,
+      });
+      await refreshRoleMatrix(syncedRows, { revalidate: false });
+      toast.success("Discord role cache synced");
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, "Failed to sync roles from Discord"));
+    } finally {
+      setIsSyncingRoles(false);
     }
   }
 
@@ -333,13 +431,31 @@ export function RoleMatrixPage() {
               </div>
               <h2 className="cb-feature-title mt-3 text-4xl">Role Matrix</h2>
             </div>
-            <Button
-              variant="ghost"
-              startContent={<RefreshCw size={15} />}
-              onPress={() => refreshRoleMatrix()}
-            >
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                startContent={<RefreshCw size={15} />}
+                isDisabled={roleMatrixLoading || isSyncingRoles}
+                onPress={() => refreshRoleMatrix()}
+              >
+                Refresh
+              </Button>
+              <Separator orientation="vertical" className="h-6" />
+              <Button
+                variant="flat"
+                color="warning"
+                isDisabled={isSyncingRoles}
+                isPending={isSyncingRoles}
+                onPress={handleSyncRoles}
+              >
+                {({ isPending }) => (
+                  <>
+                    {isPending ? <Spinner color="current" size="sm" /> : <RefreshCw size={15} />}
+                    Sync Roles
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </Card>
 
@@ -408,7 +524,6 @@ export function RoleMatrixPage() {
                 title="Failed to load role matrix"
                 description={extractApiErrorMessage(roleMatrixError)}
                 onRetry={() => refreshRoleMatrix()}
-
               />
             ) : null}
           </section>
@@ -424,26 +539,38 @@ export function RoleMatrixPage() {
                   <Chip variant="flat">Draft: {draftPermissions.length} permissions</Chip>
                 </div>
 
-                {isOwner ? (
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      isDisabled={!canWrite || !allPermissionKeys.length}
-                      onPress={handleSelectAllPermissions}
-                    >
-                      Select All Permissions
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      isDisabled={!canWrite || !draftPermissions.length}
-                      onPress={handleClearAllPermissions}
-                    >
-                      Clear All Permissions
-                    </Button>
-                  </div>
-                ) : null}
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    isDisabled={!canWrite || !allPermissionKeys.length}
+                    onPress={handleSelectDefaultPermissions}
+                  >
+                    Select Default Permissions
+                  </Button>
+
+                  {isOwner ? (
+                    <>
+                      <Separator orientation="vertical" className="h-6" />
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        isDisabled={!canWrite || !allPermissionKeys.length}
+                        onPress={handleSelectAllPermissions}
+                      >
+                        Select All Permissions
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        isDisabled={!canWrite || !draftPermissions.length}
+                        onPress={handleClearAllPermissions}
+                      >
+                        Clear All Permissions
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
 
                 <div className="rounded-xl border border-white/10 bg-black/35 p-3">
                   {groupedPermissions.length ? (
@@ -520,25 +647,22 @@ export function RoleMatrixPage() {
                     </ListBox>
                   </div>
 
-                  {allPermissionKeys.length === 0 ? (
+                  {!permissionCatalogLoading && allPermissionKeys.length === 0 ? (
                     <div className="mt-3">
                       <EmptyBlock
                         title="No permissions available"
-                        description="This role currently has no assignable permissions."
+                        description="Permission catalog is empty. Seed permissions first."
                       />
                     </div>
                   ) : null}
                 </div>
 
                 {canWrite ? (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button
-                      color="warning"
-                      startContent={<Save size={14} />}
-                      onPress={handleSavePermissions}
-                    >
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <Button color="warning" startContent={<Save size={14} />} onPress={handleSavePermissions}>
                       Save Role Permissions
                     </Button>
+                    <Separator orientation="vertical" className="h-6" />
                     <Button
                       variant="ghost"
                       startContent={<CheckCheck size={14} />}
@@ -553,7 +677,18 @@ export function RoleMatrixPage() {
                     <p>Read-only mode. You need discord_role_permissions.write to modify this matrix.</p>
                   </div>
                 )}
-            </FormSectionDisclosure>
+
+                {permissionCatalogError ? (
+                  <div className="mt-3 rounded-xl border border-rose-300/25 bg-rose-300/10 p-3 text-sm text-rose-100">
+                    {extractApiErrorMessage(permissionCatalogError, "Failed to load permission catalog")}
+                    <div className="mt-2">
+                      <Button size="sm" variant="ghost" onPress={() => refreshPermissionCatalog()}>
+                        Retry catalog
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </FormSectionDisclosure>
             ) : (
               <EmptyBlock
                 title="Select a role"

@@ -29,6 +29,7 @@ class VacationRepository:
         *,
         status: str | None,
         player_id: int | None,
+        requester_user_id: int | None,
         limit: int,
         offset: int,
     ) -> Sequence[VacationRequest]:
@@ -37,6 +38,8 @@ class VacationRepository:
             stmt = stmt.where(VacationRequest.status == status)
         if player_id is not None:
             stmt = stmt.where(VacationRequest.player_id == player_id)
+        if requester_user_id is not None:
+            stmt = stmt.where(VacationRequest.requester_user_id == requester_user_id)
         stmt = stmt.limit(limit).offset(offset)
         result = await self.session.execute(stmt)
         return result.scalars().all()

@@ -11,7 +11,7 @@ import {
   selectPermissions,
 } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
-import { hasPermissionSet } from "../../../core/permissions/guards.js";
+import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { formatBytes } from "../../../shared/utils/formatting.js";
@@ -30,7 +30,7 @@ export function OrderDetailPage() {
   const permissions = useAppSelector(selectPermissions);
   const isOwner = useAppSelector(selectIsOwner);
 
-  const canRead = hasPermissionSet(["orders.read"], permissions, isOwner);
+  const canRead = hasAnyPermissionSet(["orders.read", "orders.submit"], permissions, isOwner);
   const canReview = hasPermissionSet(["orders.review"], permissions, isOwner);
   const canAccept =
     isOwner || hasPermissionSet(["orders.decision.accept"], permissions, isOwner);
@@ -58,7 +58,7 @@ export function OrderDetailPage() {
     return (
       <ForbiddenState
         title="Order Details Restricted"
-        description="You need orders.read permission to open this page."
+        description="You need orders.read or orders.submit permission to open this page."
       />
     );
   }

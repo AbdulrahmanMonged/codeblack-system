@@ -76,6 +76,30 @@ class VacationService:
                 reviewed_by_user_id=None,
                 reviewed_at=None,
             )
+
+            notification_service = NotificationService()
+            await notification_service.dispatch_to_permissions_in_session(
+                session=session,
+                actor_user_id=requester_user_id,
+                permission_keys={"vacations.approve", "vacations.deny"},
+                event_type="vacations.submitted",
+                category="vacations",
+                severity="info",
+                title=f"Vacation submitted: {row.public_id}",
+                body=(
+                    f"Vacation request from {account_link.account_name} is waiting for review."
+                ),
+                entity_type="vacation",
+                entity_public_id=row.public_id,
+                metadata_json={
+                    "player_id": row.player_id,
+                    "requester_user_id": requester_user_id,
+                    "leave_date": row.leave_date.isoformat(),
+                    "expected_return_date": row.expected_return_date.isoformat(),
+                    "status": row.status,
+                },
+                include_actor_if_missing=False,
+            )
             return self._to_dict(row)
 
     async def list_requests(
@@ -83,6 +107,7 @@ class VacationService:
         *,
         status: str | None,
         player_id: int | None,
+        requester_user_id: int | None,
         limit: int,
         offset: int,
     ) -> list[dict]:
@@ -91,6 +116,7 @@ class VacationService:
             rows = await repo.list_requests(
                 status=status,
                 player_id=player_id,
+                requester_user_id=requester_user_id,
                 limit=limit,
                 offset=offset,
             )
@@ -150,19 +176,18 @@ class VacationService:
                         notes=roster_entry.notes,
                     )
 
-            player = await roster_repo.get_player_by_id(row.player_id)
-            player_name = player.ingame_name if player else f"Player {row.player_id}"
-            await notification_service.dispatch_in_session(
+            await notification_service.dispatch_to_users_in_session(
                 session=session,
                 actor_user_id=reviewer_user_id,
+                recipient_user_ids={row.requester_user_id},
                 event_type="vacations.approved",
                 category="vacations",
                 severity="success",
-                title=f"Vacation approved: {player_name}",
+                title=f"Vacation approved: {row.public_id}",
                 body=(
-                    f"Vacation request {row.public_id} was approved."
+                    "Your vacation request was approved."
                     if not review_comment
-                    else f"Vacation request {row.public_id} was approved. Reviewer comment: {review_comment}"
+                    else f"Your vacation request was approved. Reviewer comment: {review_comment}"
                 ),
                 entity_type="vacation",
                 entity_public_id=row.public_id,
@@ -172,6 +197,7 @@ class VacationService:
                     "expected_return_date": row.expected_return_date.isoformat(),
                     "status": row.status,
                 },
+                include_actor_if_missing=False,
             )
             return self._to_dict(row)
 
@@ -184,7 +210,6 @@ class VacationService:
     ) -> dict:
         async with get_session() as session:
             repo = VacationRepository(session)
-            roster_repo = RosterRepository(session)
             notification_service = NotificationService()
             row = await repo.review_request(
                 public_id=public_id,
@@ -198,19 +223,19 @@ class VacationService:
                     error_code="VACATION_REQUEST_NOT_FOUND",
                     message=f"Vacation request {public_id} not found",
                 )
-            player = await roster_repo.get_player_by_id(row.player_id)
-            player_name = player.ingame_name if player else f"Player {row.player_id}"
-            await notification_service.dispatch_in_session(
+
+            await notification_service.dispatch_to_users_in_session(
                 session=session,
                 actor_user_id=reviewer_user_id,
+                recipient_user_ids={row.requester_user_id},
                 event_type="vacations.denied",
                 category="vacations",
                 severity="warning",
-                title=f"Vacation denied: {player_name}",
+                title=f"Vacation denied: {row.public_id}",
                 body=(
-                    f"Vacation request {row.public_id} was denied."
+                    "Your vacation request was denied."
                     if not review_comment
-                    else f"Vacation request {row.public_id} was denied. Reviewer comment: {review_comment}"
+                    else f"Your vacation request was denied. Reviewer comment: {review_comment}"
                 ),
                 entity_type="vacation",
                 entity_public_id=row.public_id,
@@ -220,6 +245,7 @@ class VacationService:
                     "expected_return_date": row.expected_return_date.isoformat(),
                     "status": row.status,
                 },
+                include_actor_if_missing=False,
             )
             return self._to_dict(row)
 
@@ -281,19 +307,18 @@ class VacationService:
                     notes=roster_entry.notes,
                 )
 
-            player = await roster_repo.get_player_by_id(row.player_id)
-            player_name = player.ingame_name if player else f"Player {row.player_id}"
-            await notification_service.dispatch_in_session(
+            await notification_service.dispatch_to_users_in_session(
                 session=session,
                 actor_user_id=reviewer_user_id,
+                recipient_user_ids={row.requester_user_id},
                 event_type="vacations.returned",
                 category="vacations",
                 severity="info",
-                title=f"Vacation closed: {player_name}",
+                title=f"Vacation closed: {row.public_id}",
                 body=(
-                    f"Vacation request {row.public_id} was marked as returned."
+                    "Your vacation request was marked as returned."
                     if not review_comment
-                    else f"Vacation request {row.public_id} was marked as returned. Reviewer comment: {review_comment}"
+                    else f"Your vacation request was marked as returned. Reviewer comment: {review_comment}"
                 ),
                 entity_type="vacation",
                 entity_public_id=row.public_id,
@@ -303,6 +328,7 @@ class VacationService:
                     "expected_return_date": row.expected_return_date.isoformat(),
                     "status": row.status,
                 },
+                include_actor_if_missing=False,
             )
             return self._to_dict(row)
 
