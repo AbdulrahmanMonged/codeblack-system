@@ -123,8 +123,8 @@ export function RoleMatrixPage() {
   const hasNextPage = roleRows.length > pageSize;
 
   const selectedRole = useMemo(
-    () => pageRoleRows.find((role) => String(role.discord_role_id) === String(selectedRoleId)) || null,
-    [pageRoleRows, selectedRoleId],
+    () => roleRows.find((role) => String(role.discord_role_id) === String(selectedRoleId)) || null,
+    [roleRows, selectedRoleId],
   );
 
   const selectedAssignedPermissions = useMemo(
@@ -186,6 +186,23 @@ export function RoleMatrixPage() {
     const nextPermissions = normalizeSelectionToArray(selectionKeys, allPermissionKeys);
     setDraftPermissions(sortUniquePermissions(nextPermissions));
   }
+  function handleSelectSectionPermissions(sectionItems) {
+    if (!canWrite) {
+      return;
+    }
+    setDraftPermissions((previous) => sortUniquePermissions([...previous, ...sectionItems]));
+  }
+
+  function handleClearSectionPermissions(sectionItems) {
+    if (!canWrite) {
+      return;
+    }
+    const sectionSet = new Set(sectionItems.map((item) => String(item).trim()).filter(Boolean));
+    setDraftPermissions((previous) =>
+      sortUniquePermissions(previous.filter((permissionKey) => !sectionSet.has(permissionKey))),
+    );
+  }
+
 
   async function handleSavePermissions() {
     if (!selectedRole) {
@@ -329,6 +346,42 @@ export function RoleMatrixPage() {
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-black/35 p-3">
+                  {groupedPermissions.length ? (
+                    <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/60">
+                        Section quick actions
+                      </p>
+                      <div className="mt-2 grid gap-2 md:grid-cols-2">
+                        {groupedPermissions.map((section) => (
+                          <div
+                            key={`quick-${section.key}`}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/25 px-2 py-2"
+                          >
+                            <span className="text-xs font-medium text-white/85">{section.label}</span>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                isDisabled={!canWrite}
+                                onPress={() => handleSelectSectionPermissions(section.items)}
+                              >
+                                Select Section
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                isDisabled={!canWrite}
+                                onPress={() => handleClearSectionPermissions(section.items)}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
                   <Autocomplete
                     className="w-full"
                     placeholder="Select permissions"
