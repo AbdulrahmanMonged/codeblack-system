@@ -12,7 +12,7 @@ import {
   useFilter,
 } from "@heroui/react";
 import { CheckCheck, RefreshCw, Save, ShieldAlert } from "lucide-react";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -121,6 +121,29 @@ export function RoleMatrixPage() {
   const roleRows = useMemo(() => toArray(roleMatrix), [roleMatrix]);
   const pageRoleRows = useMemo(() => roleRows.slice(0, pageSize), [roleRows, pageSize]);
   const hasNextPage = roleRows.length > pageSize;
+
+  useEffect(() => {
+    if (!roleRows.length) {
+      if (selectedRoleId) {
+        setSelectedRoleId("");
+      }
+      if (draftPermissions.length) {
+        setDraftPermissions([]);
+      }
+      return;
+    }
+
+    const hasSelected = roleRows.some(
+      (role) => String(role.discord_role_id) === String(selectedRoleId),
+    );
+    if (hasSelected) {
+      return;
+    }
+
+    const firstRole = roleRows[0];
+    setSelectedRoleId(String(firstRole.discord_role_id));
+    setDraftPermissions(sortUniquePermissions(firstRole.assigned_permissions || []));
+  }, [roleRows, selectedRoleId, draftPermissions.length]);
 
   const selectedRole = useMemo(
     () => roleRows.find((role) => String(role.discord_role_id) === String(selectedRoleId)) || null,
