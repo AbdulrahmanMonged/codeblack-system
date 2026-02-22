@@ -2,7 +2,7 @@ import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import useSWR from "swr";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { FormSelect } from "../../../shared/ui/FormControls.jsx";
@@ -26,6 +26,7 @@ function statusColor(status) {
 }
 
 export function MyOrdersPanel({ canOpenDetails }) {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -114,8 +115,7 @@ export function MyOrdersPanel({ canOpenDetails }) {
 
                 {canOpenDetails ? (
                   <Button
-                    as={Link}
-                    to={`/orders/${order.public_id}`}
+                    onPress={() => navigate(`/orders/${order.public_id}`)}
                     size="sm"
                     variant="ghost"
                     endContent={<ExternalLink size={13} />}
