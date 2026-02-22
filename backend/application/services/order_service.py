@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from backend.application.dto.auth import AuthenticatedPrincipal
+from backend.application.services.notification_service import NotificationService
 from backend.core.database import get_session
 from backend.core.errors import ApiException
 from backend.infrastructure.repositories.order_repository import OrderRepository
@@ -49,6 +50,26 @@ class OrderService:
                 proof_size_bytes=proof_upload.size_bytes,
                 status="submitted",
             )
+
+            notification_service = NotificationService()
+            await notification_service.dispatch_to_permissions_in_session(
+                session=session,
+                actor_user_id=principal.user_id,
+                permission_keys={"orders.review", "orders.decision.accept", "orders.decision.deny"},
+                event_type="orders.submitted",
+                category="orders",
+                severity="info",
+                title=f"New order submitted: {order.public_id}",
+                body=f"Order from {account_link.account_name} requires review.",
+                entity_type="order",
+                entity_public_id=order.public_id,
+                metadata_json={
+                    "submitted_by_user_id": order.submitted_by_user_id,
+                    "account_name": order.account_name,
+                    "status": order.status,
+                },
+                include_actor_if_missing=False,
+            )
             return self._order_to_dict(order)
 
     async def list_orders(
@@ -81,7 +102,13 @@ class OrderService:
             )
             return [self._order_to_dict(row) for row in rows]
 
-    async def get_order(self, *, public_id: str) -> dict:
+    async def get_order(
+        self,
+        *,
+        public_id: str,
+        requester_user_id: int,
+        can_read_all: bool,
+    ) -> dict:
         async with get_session() as session:
             repo = OrderRepository(session)
             row = await repo.get_order_by_public_id(public_id)
@@ -90,6 +117,12 @@ class OrderService:
                     status_code=404,
                     error_code="ORDER_NOT_FOUND",
                     message=f"Order {public_id} not found",
+                )
+            if not can_read_all and row.submitted_by_user_id != requester_user_id:
+                raise ApiException(
+                    status_code=403,
+                    error_code="ORDER_ACCESS_FORBIDDEN",
+                    message="You can only view your own orders",
                 )
             return self._order_to_dict(row)
 
@@ -131,6 +164,30 @@ class OrderService:
                 reviewer_user_id=reviewer_user_id,
                 decision=decision_value,
                 reason=reason,
+            )
+
+            notification_service = NotificationService()
+            await notification_service.dispatch_to_users_in_session(
+                session=session,
+                actor_user_id=reviewer_user_id,
+                recipient_user_ids={row.submitted_by_user_id},
+                event_type=f"orders.{decision_value}",
+                category="orders",
+                severity="success" if decision_value == "accepted" else "warning",
+                title=f"Order {decision_value}: {row.public_id}",
+                body=(
+                    f"Your order {row.public_id} was {decision_value}."
+                    if not reason
+                    else f"Your order {row.public_id} was {decision_value}. Reviewer reason: {reason}"
+                ),
+                entity_type="order",
+                entity_public_id=row.public_id,
+                metadata_json={
+                    "decision": decision_value,
+                    "reviewer_user_id": reviewer_user_id,
+                    "status": row.status,
+                },
+                include_actor_if_missing=False,
             )
             return self._order_to_dict(row)
 

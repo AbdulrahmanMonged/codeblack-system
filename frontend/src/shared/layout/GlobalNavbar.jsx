@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, Chip, Spinner } from "@heroui/react";
+import { Avatar, Button, Card, Chip, Separator, Spinner } from "@heroui/react";
 import { Bell, DoorOpen, LayoutDashboard, Menu, X } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -255,13 +255,15 @@ export function GlobalNavbar({ embedded = false }) {
                       </p>
                     ) : null}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 flex items-center gap-2">
                     <Button size="sm" variant="flat" onPress={handleMarkAllRead}>
                       Mark all read
                     </Button>
+                    <Separator orientation="vertical" className="h-5" />
                     <Button size="sm" variant="ghost" onPress={handleDeleteAll}>
                       Delete all
                     </Button>
+                    <Separator orientation="vertical" className="h-5" />
                     <Button
                       size="sm"
                       color="warning"

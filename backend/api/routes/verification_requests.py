@@ -43,6 +43,7 @@ async def create_verification_request(
         "verification_requests",
         "review_queue",
         f"verification_requests:{principal.user_id}",
+        "notifications",
     )
     return VerificationRequestResponse(**row)
 
@@ -141,6 +142,7 @@ async def approve_verification_request(
         "review_queue",
         f"verification_requests:{row['user_id']}",
         f"user_session:{row['user_id']}",
+        "notifications",
     )
     return VerificationRequestResponse(**row)
 
@@ -168,5 +170,6 @@ async def deny_verification_request(
         "verification_requests",
         "review_queue",
         f"verification_requests:{row['user_id']}",
+        "notifications",
     )
     return VerificationRequestResponse(**row)

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from backend.application.dto.auth import AuthenticatedPrincipal
+from backend.application.services.notification_service import NotificationService
 from backend.core.database import get_session
 from backend.core.errors import ApiException
 from backend.infrastructure.repositories.order_repository import OrderRepository
@@ -55,6 +56,27 @@ class VerificationService:
                 reviewed_by_user_id=None,
                 reviewed_at=None,
             )
+
+            notification_service = NotificationService()
+            await notification_service.dispatch_to_permissions_in_session(
+                session=session,
+                actor_user_id=principal.user_id,
+                permission_keys={"verification_requests.review"},
+                event_type="verification_requests.submitted",
+                category="verification",
+                severity="info",
+                title=f"Verification submitted: {row.public_id}",
+                body=f"Verification request for {row.account_name} is waiting for review.",
+                entity_type="verification_request",
+                entity_public_id=row.public_id,
+                metadata_json={
+                    "user_id": row.user_id,
+                    "discord_user_id": row.discord_user_id,
+                    "account_name": row.account_name,
+                    "status": row.status,
+                },
+                include_actor_if_missing=False,
+            )
             return self._to_dict(row)
 
     async def get_latest_for_user(self, *, user_id: int) -> dict | None:
@@ -100,6 +122,8 @@ class VerificationService:
             verification_repo = VerificationRepository(session)
             order_repo = OrderRepository(session)
             roster_repo = RosterRepository(session)
+            notification_service = NotificationService()
+
             row = await verification_repo.get_by_public_id(public_id)
             if row is None:
                 raise ApiException(
@@ -160,6 +184,28 @@ class VerificationService:
                 review_comment=review_comment,
                 reviewed_by_user_id=reviewer_user_id,
             )
+
+            await notification_service.dispatch_to_users_in_session(
+                session=session,
+                actor_user_id=reviewer_user_id,
+                recipient_user_ids={row.user_id},
+                event_type="verification_requests.approved",
+                category="verification",
+                severity="success",
+                title=f"Verification approved: {reviewed.public_id}",
+                body=(
+                    "Your verification request has been approved."
+                    if not review_comment
+                    else f"Your verification request has been approved. Reviewer comment: {review_comment}"
+                ),
+                entity_type="verification_request",
+                entity_public_id=reviewed.public_id,
+                metadata_json={
+                    "status": reviewed.status,
+                    "account_name": reviewed.account_name,
+                },
+                include_actor_if_missing=False,
+            )
             return self._to_dict(reviewed)
 
     async def deny_request(
@@ -179,6 +225,8 @@ class VerificationService:
 
         async with get_session() as session:
             repo = VerificationRepository(session)
+            notification_service = NotificationService()
+
             row = await repo.get_by_public_id(public_id)
             if row is None:
                 raise ApiException(
@@ -198,6 +246,24 @@ class VerificationService:
                 status="denied",
                 review_comment=normalized_comment,
                 reviewed_by_user_id=reviewer_user_id,
+            )
+
+            await notification_service.dispatch_to_users_in_session(
+                session=session,
+                actor_user_id=reviewer_user_id,
+                recipient_user_ids={row.user_id},
+                event_type="verification_requests.denied",
+                category="verification",
+                severity="warning",
+                title=f"Verification denied: {reviewed.public_id}",
+                body=f"Your verification request was denied. Reviewer comment: {normalized_comment}",
+                entity_type="verification_request",
+                entity_public_id=reviewed.public_id,
+                metadata_json={
+                    "status": reviewed.status,
+                    "account_name": reviewed.account_name,
+                },
+                include_actor_if_missing=False,
             )
             return self._to_dict(reviewed)
 

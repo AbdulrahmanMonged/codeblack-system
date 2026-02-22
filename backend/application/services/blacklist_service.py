@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from backend.application.services.notification_service import NotificationService
 from backend.core.config import get_settings
 from backend.core.database import get_session
 from backend.core.errors import ApiException
 from backend.infrastructure.repositories.blacklist_repository import BlacklistRepository
+from backend.infrastructure.repositories.order_repository import OrderRepository
 
 
 class BlacklistService:
@@ -162,6 +164,9 @@ class BlacklistService:
             )
         async with get_session() as session:
             repo = BlacklistRepository(session)
+            order_repo = OrderRepository(session)
+            notification_service = NotificationService()
+
             entry = await repo.find_active_by_account_name(identity)
             if entry is None:
                 raise ApiException(
@@ -186,6 +191,27 @@ class BlacklistService:
                 review_comment=None,
                 reviewed_at=None,
                 reviewed_by_user_id=None,
+            )
+
+            account_link = await order_repo.get_user_game_account_by_account_name(identity)
+            actor_user_id = account_link.user_id if account_link else None
+            await notification_service.dispatch_to_permissions_in_session(
+                session=session,
+                actor_user_id=actor_user_id,
+                permission_keys={"blacklist_removal_requests.review"},
+                event_type="blacklist_removal.submitted",
+                category="blacklist",
+                severity="info",
+                title=f"Blacklist removal submitted: {row.public_id}",
+                body=f"Blacklist removal request for {identity} is waiting for review.",
+                entity_type="blacklist_removal_request",
+                entity_public_id=row.public_id,
+                metadata_json={
+                    "account_name": identity,
+                    "status": row.status,
+                    "blacklist_entry_id": row.blacklist_entry_id,
+                },
+                include_actor_if_missing=False,
             )
             return self._removal_request_to_dict(row)
 
@@ -280,6 +306,9 @@ class BlacklistService:
         target_status = "approved" if approve else "denied"
         async with get_session() as session:
             repo = BlacklistRepository(session)
+            order_repo = OrderRepository(session)
+            notification_service = NotificationService()
+
             row = await repo.review_removal_request(
                 request_id=request_id,
                 reviewer_user_id=reviewer_user_id,
@@ -305,6 +334,31 @@ class BlacklistService:
                         actor_user_id=reviewer_user_id,
                         change_set='{"source":"removal_request"}',
                     )
+
+            account_link = await order_repo.get_user_game_account_by_account_name(row.account_name)
+            if account_link is not None:
+                await notification_service.dispatch_to_users_in_session(
+                    session=session,
+                    actor_user_id=reviewer_user_id,
+                    recipient_user_ids={account_link.user_id},
+                    event_type=f"blacklist_removal.{target_status}",
+                    category="blacklist",
+                    severity="success" if approve else "warning",
+                    title=f"Blacklist removal {target_status}: {row.public_id}",
+                    body=(
+                        f"Your blacklist removal request {row.public_id} was {target_status}."
+                        if not review_comment
+                        else f"Your blacklist removal request {row.public_id} was {target_status}. Reviewer comment: {review_comment}"
+                    ),
+                    entity_type="blacklist_removal_request",
+                    entity_public_id=row.public_id,
+                    metadata_json={
+                        "status": row.status,
+                        "account_name": row.account_name,
+                        "blacklist_entry_id": row.blacklist_entry_id,
+                    },
+                    include_actor_if_missing=False,
+                )
 
             return self._removal_request_to_dict(row)
 

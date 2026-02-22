@@ -10,14 +10,23 @@ class PermissionService:
     def __init__(self):
         self.settings = get_settings()
 
-    async def list_role_matrix(self, *, limit: int, offset: int) -> list[dict]:
+    async def list_role_matrix(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        sync_roles: bool = False,
+    ) -> list[dict]:
+        if sync_roles:
+            from backend.application.services.auth_service import AuthService
+
+            await AuthService().sync_discord_roles()
+
         async with get_session() as session:
             repo = AuthRepository(session)
             roles = await repo.list_discord_roles(guild_id=self.settings.DISCORD_GUILD_ID)
             role_permission_pairs = await repo.list_role_permission_pairs()
-            permissions = await repo.list_permissions()
 
-        all_permission_keys = sorted({permission.key for permission in permissions})
         permission_map: dict[int, set[str]] = {}
         for role_id, permission_key in role_permission_pairs:
             permission_map.setdefault(role_id, set()).add(permission_key)
@@ -36,10 +45,15 @@ class PermissionService:
                     "position": role.position,
                     "is_active": role.is_active,
                     "assigned_permissions": assigned,
-                    "available_permissions": all_permission_keys,
                 }
             )
         return result
+
+    async def list_permission_catalog(self) -> list[str]:
+        async with get_session() as session:
+            repo = AuthRepository(session)
+            permissions = await repo.list_permissions()
+        return sorted({permission.key for permission in permissions})
 
     async def update_role_permissions(
         self,
@@ -49,7 +63,6 @@ class PermissionService:
     ) -> dict:
         normalized_keys = sorted(set(permission_keys))
         selected_role = None
-        available_permissions = []
         role_sync_attempted = False
 
         while True:
@@ -76,7 +89,6 @@ class PermissionService:
                         discord_role_id=discord_role_id,
                         permission_keys=normalized_keys,
                     )
-                    available_permissions = await repo.list_permissions()
                     break
 
             if role_sync_attempted:
@@ -98,6 +110,7 @@ class PermissionService:
                     message=f"Discord role {discord_role_id} not found in cache",
                     details={"role_sync_error": exc.error_code},
                 ) from exc
+
         return {
             "discord_role_id": str(selected_role.discord_role_id),
             "guild_id": str(selected_role.guild_id),
@@ -105,7 +118,4 @@ class PermissionService:
             "position": selected_role.position,
             "is_active": selected_role.is_active,
             "assigned_permissions": normalized_keys,
-            "available_permissions": sorted(
-                {permission.key for permission in available_permissions}
-            ),
         }

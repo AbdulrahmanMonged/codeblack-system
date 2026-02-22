@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database import get_session
 from backend.core.errors import ApiException
-from backend.infrastructure.repositories.auth_repository import AuthRepository
 from backend.infrastructure.cache.redis_cache import cache
+from backend.infrastructure.repositories.auth_repository import AuthRepository
 from backend.infrastructure.repositories.notification_repository import (
     NotificationRepository,
 )
@@ -153,7 +153,6 @@ class NotificationService:
 
         async with get_session() as session:
             auth_repo = AuthRepository(session)
-            notification_repo = NotificationRepository(session)
 
             recipient_user_ids: set[int] = set()
             if normalized_user_ids:
@@ -174,27 +173,19 @@ class NotificationService:
                     message="No active recipients matched the provided targets",
                 )
 
-            notification = await notification_repo.create_notification(
-                public_id=self._public_id(),
-                event_type=event_type.strip().lower(),
-                category=category.strip().lower(),
-                severity=severity.strip().lower(),
-                title=title.strip(),
-                body=body.strip(),
-                entity_type=entity_type.strip().lower() if entity_type else None,
-                entity_public_id=entity_public_id.strip() if entity_public_id else None,
+            result = await self.dispatch_to_users_in_session(
+                session=session,
                 actor_user_id=actor_user_id,
+                recipient_user_ids=recipient_user_ids,
+                event_type=event_type,
+                category=category,
+                severity=severity,
+                title=title,
+                body=body,
+                entity_type=entity_type,
+                entity_public_id=entity_public_id,
                 metadata_json=metadata_json,
-            )
-            deliveries = await notification_repo.create_deliveries(
-                notification_id=notification.id,
-                recipient_user_ids=sorted(recipient_user_ids),
-            )
-            user_tags = {f"notifications:{user_id}" for user_id in recipient_user_ids}
-            await cache.invalidate_tags("notifications", *user_tags)
-            result = self._notification_to_dict(
-                notification=notification,
-                recipient_count=len(deliveries),
+                include_actor_if_missing=False,
             )
             result["recipient_user_ids"] = sorted(recipient_user_ids)
             return result
@@ -215,15 +206,101 @@ class NotificationService:
         recipient_permission: str | None = None,
     ) -> dict:
         recipient_permission_key = recipient_permission or self.DEFAULT_RECIPIENT_PERMISSION
-        auth_repo = AuthRepository(session)
-        notification_repo = NotificationRepository(session)
-
-        recipient_user_ids = await auth_repo.list_active_user_ids_with_any_permissions(
-            permission_keys={recipient_permission_key, self.OWNER_OVERRIDE_PERMISSION},
+        return await self.dispatch_to_permissions_in_session(
+            session=session,
+            actor_user_id=actor_user_id,
+            permission_keys={recipient_permission_key},
+            event_type=event_type,
+            category=category,
+            severity=severity,
+            title=title,
+            body=body,
+            entity_type=entity_type,
+            entity_public_id=entity_public_id,
+            metadata_json=metadata_json,
+            include_actor_if_missing=True,
         )
-        if actor_user_id is not None and actor_user_id not in recipient_user_ids:
-            recipient_user_ids.append(actor_user_id)
 
+    async def dispatch_to_permissions_in_session(
+        self,
+        *,
+        session: AsyncSession,
+        actor_user_id: int | None,
+        permission_keys: set[str],
+        event_type: str,
+        category: str,
+        severity: str,
+        title: str,
+        body: str,
+        entity_type: str | None = None,
+        entity_public_id: str | None = None,
+        metadata_json: dict[str, Any] | None = None,
+        include_actor_if_missing: bool = True,
+    ) -> dict:
+        normalized_permissions = {str(item).strip() for item in permission_keys if str(item).strip()}
+        if not normalized_permissions:
+            raise ApiException(
+                status_code=422,
+                error_code="NOTIFICATION_PERMISSION_TARGETS_REQUIRED",
+                message="At least one target permission is required",
+            )
+
+        auth_repo = AuthRepository(session)
+        recipient_user_ids = await auth_repo.list_active_user_ids_with_any_permissions(
+            permission_keys=normalized_permissions | {self.OWNER_OVERRIDE_PERMISSION},
+        )
+        return await self.dispatch_to_users_in_session(
+            session=session,
+            actor_user_id=actor_user_id,
+            recipient_user_ids=set(recipient_user_ids),
+            event_type=event_type,
+            category=category,
+            severity=severity,
+            title=title,
+            body=body,
+            entity_type=entity_type,
+            entity_public_id=entity_public_id,
+            metadata_json=metadata_json,
+            include_actor_if_missing=include_actor_if_missing,
+        )
+
+    async def dispatch_to_users_in_session(
+        self,
+        *,
+        session: AsyncSession,
+        actor_user_id: int | None,
+        recipient_user_ids: set[int],
+        event_type: str,
+        category: str,
+        severity: str,
+        title: str,
+        body: str,
+        entity_type: str | None = None,
+        entity_public_id: str | None = None,
+        metadata_json: dict[str, Any] | None = None,
+        include_actor_if_missing: bool = False,
+    ) -> dict:
+        normalized_recipient_ids = {int(user_id) for user_id in recipient_user_ids if int(user_id) > 0}
+        if include_actor_if_missing and actor_user_id is not None and int(actor_user_id) > 0:
+            normalized_recipient_ids.add(int(actor_user_id))
+
+        if not normalized_recipient_ids:
+            return {
+                "public_id": None,
+                "event_type": str(event_type).strip().lower(),
+                "category": str(category).strip().lower(),
+                "severity": str(severity).strip().lower(),
+                "title": str(title).strip(),
+                "body": str(body).strip(),
+                "entity_type": str(entity_type).strip().lower() if entity_type else None,
+                "entity_public_id": str(entity_public_id).strip() if entity_public_id else None,
+                "actor_user_id": actor_user_id,
+                "metadata_json": metadata_json,
+                "created_at": None,
+                "recipient_count": 0,
+            }
+
+        notification_repo = NotificationRepository(session)
         notification = await notification_repo.create_notification(
             public_id=self._public_id(),
             event_type=event_type.strip().lower(),
@@ -239,9 +316,9 @@ class NotificationService:
 
         deliveries = await notification_repo.create_deliveries(
             notification_id=notification.id,
-            recipient_user_ids=sorted(set(recipient_user_ids)),
+            recipient_user_ids=sorted(normalized_recipient_ids),
         )
-        user_tags = {f"notifications:{user_id}" for user_id in recipient_user_ids}
+        user_tags = {f"notifications:{user_id}" for user_id in normalized_recipient_ids}
         await cache.invalidate_tags("notifications", *user_tags)
         return self._notification_to_dict(
             notification=notification,

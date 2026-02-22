@@ -59,7 +59,7 @@ export function OrderSubmitPage() {
   const canSubmit = hasAnyPermissionSet(["orders.submit"], permissions, isOwner);
   const canReadOrders = hasAnyPermissionSet(["orders.read"], permissions, isOwner);
   const canAccessOrdersTab = canSubmit || canReadOrders;
-  const canOpenOrderDetails = canReadOrders;
+  const canOpenOrderDetails = canSubmit || canReadOrders;
   const canReadAccountLink = hasAnyPermissionSet(
     ["user_account_link.read", "user_account_link.write"],
     permissions,

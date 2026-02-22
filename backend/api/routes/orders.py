@@ -42,7 +42,12 @@ async def submit_order(
         completed_orders=completed_orders,
         proof_upload=uploaded,
     )
-    await cache.invalidate_tags("orders", "review_queue", f"orders_user:{principal.user_id}")
+    await cache.invalidate_tags(
+        "orders",
+        "review_queue",
+        f"orders_user:{principal.user_id}",
+        "notifications",
+    )
     return OrderResponse(**row)
 
 
@@ -115,10 +120,14 @@ async def list_my_orders(
 @router.get("/{public_id}", response_model=OrderResponse)
 async def get_order(
     public_id: str,
-    _: AuthenticatedPrincipal = Depends(require_permissions("orders.read")),
+    principal: AuthenticatedPrincipal = Depends(require_any_permissions("orders.read", "orders.submit")),
     service: OrderService = Depends(get_order_service),
 ):
-    row = await service.get_order(public_id=public_id)
+    row = await service.get_order(
+        public_id=public_id,
+        requester_user_id=principal.user_id,
+        can_read_all=(principal.is_owner or "orders.read" in set(principal.permissions)),
+    )
     return OrderResponse(**row)
 
 
@@ -150,7 +159,12 @@ async def decide_order(
         decision=payload.decision,
         reason=payload.reason,
     )
-    await cache.invalidate_tags("orders", "review_queue", f"orders_user:{row['submitted_by_user_id']}")
+    await cache.invalidate_tags(
+        "orders",
+        "review_queue",
+        f"orders_user:{row['submitted_by_user_id']}",
+        "notifications",
+    )
     return OrderResponse(**row)
 
 

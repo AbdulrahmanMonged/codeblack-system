@@ -10,7 +10,6 @@ class RolePermissionMatrixItem(BaseModel):
     position: int
     is_active: bool
     assigned_permissions: list[str]
-    available_permissions: list[str]
 
     @field_validator("discord_role_id", "guild_id", mode="before")
     @classmethod

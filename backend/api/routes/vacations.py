@@ -3,7 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 
-from backend.api.deps.auth import get_current_principal, require_permissions
+from backend.api.deps.auth import (
+    get_current_principal,
+    require_any_permissions,
+    require_permissions,
+)
 from backend.api.schemas.vacations import (
     VacationCreateRequest,
     VacationPoliciesResponse,
@@ -36,7 +40,12 @@ async def submit_vacation_request(
         target_group=payload.target_group,
         reason=payload.reason,
     )
-    await cache.invalidate_tags("vacations", "review_queue")
+    await cache.invalidate_tags(
+        "vacations",
+        "review_queue",
+        f"vacations_user:{principal.user_id}",
+        "notifications",
+    )
     return VacationResponse(**row)
 
 
@@ -66,6 +75,7 @@ async def list_vacation_requests(
     rows = await service.list_requests(
         status=status,
         player_id=player_id,
+        requester_user_id=None,
         limit=limit,
         offset=offset,
     )
@@ -79,9 +89,50 @@ async def list_vacation_requests(
     return [VacationResponse(**row) for row in payload]
 
 
+@router.get("/mine", response_model=list[VacationResponse])
+async def list_my_vacation_requests(
+    status: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    principal: AuthenticatedPrincipal = Depends(
+        require_any_permissions("vacations.submit", "vacations.read")
+    ),
+    service: VacationService = Depends(get_vacation_service),
+):
+    settings = get_settings()
+    cache_key = cache.build_key(
+        "vacations_mine",
+        {
+            "user_id": principal.user_id,
+            "status": status,
+            "limit": limit,
+            "offset": offset,
+        },
+    )
+    cached = await cache.get_json(cache_key)
+    if cached is not None:
+        return [VacationResponse(**row) for row in cached]
+
+    rows = await service.list_requests(
+        status=status,
+        player_id=None,
+        requester_user_id=principal.user_id,
+        limit=limit,
+        offset=offset,
+    )
+    payload = [VacationResponse(**row).model_dump(mode="json") for row in rows]
+    await cache.set_json(
+        key=cache_key,
+        value=jsonable_encoder(payload),
+        ttl_seconds=settings.BACKEND_CACHE_AUTH_LIST_TTL_SECONDS,
+        tags={"vacations", f"vacations_user:{principal.user_id}"},
+    )
+    return [VacationResponse(**row) for row in payload]
+
+
 @router.get("/policies", response_model=VacationPoliciesResponse)
 async def get_vacation_policies(
-    _: object = Depends(require_permissions("vacations.read")),
+    _: object = Depends(require_any_permissions("vacations.read", "vacations.submit")),
     service: VacationService = Depends(get_vacation_service),
 ):
     return VacationPoliciesResponse(**(await service.get_policies()))
@@ -110,7 +161,14 @@ async def approve_vacation_request(
         reviewer_user_id=principal.user_id,
         review_comment=payload.review_comment,
     )
-    await cache.invalidate_tags("vacations", "review_queue", "public_roster", "public_metrics")
+    await cache.invalidate_tags(
+        "vacations",
+        "review_queue",
+        "public_roster",
+        "public_metrics",
+        f"vacations_user:{row['requester_user_id']}",
+        "notifications",
+    )
     return VacationResponse(**row)
 
 
@@ -127,7 +185,12 @@ async def deny_vacation_request(
         reviewer_user_id=principal.user_id,
         review_comment=payload.review_comment,
     )
-    await cache.invalidate_tags("vacations", "review_queue")
+    await cache.invalidate_tags(
+        "vacations",
+        "review_queue",
+        f"vacations_user:{row['requester_user_id']}",
+        "notifications",
+    )
     return VacationResponse(**row)
 
 
@@ -142,7 +205,11 @@ async def cancel_vacation_request(
         public_id=public_id,
         requester_user_id=principal.user_id,
     )
-    await cache.invalidate_tags("vacations", "review_queue")
+    await cache.invalidate_tags(
+        "vacations",
+        "review_queue",
+        f"vacations_user:{principal.user_id}",
+    )
     return VacationResponse(**row)
 
 
@@ -159,5 +226,12 @@ async def mark_vacation_returned(
         reviewer_user_id=principal.user_id,
         review_comment=payload.review_comment,
     )
-    await cache.invalidate_tags("vacations", "review_queue", "public_roster", "public_metrics")
+    await cache.invalidate_tags(
+        "vacations",
+        "review_queue",
+        "public_roster",
+        "public_metrics",
+        f"vacations_user:{row['requester_user_id']}",
+        "notifications",
+    )
     return VacationResponse(**row)

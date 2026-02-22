@@ -8,7 +8,7 @@ import {
   RefreshCw,
   ShieldAlert,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -21,6 +21,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
@@ -30,6 +31,7 @@ import {
   createVacation,
   denyVacation,
   getVacationPolicies,
+  listMyVacations,
   listVacations,
   markVacationReturned,
 } from "../api/vacations-api.js";
@@ -58,13 +60,18 @@ export function VacationsPage() {
     isOwner,
   );
 
+  const canReadAll = canRead;
+  const canReadMine = canRead || canSubmit;
+
   const [statusFilter, setStatusFilter] = useState("");
   const [playerFilter, setPlayerFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicId, setSelectedPublicId] = useState("");
   const [reviewComment, setReviewComment] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  const { data: policies } = useSWR(canRead ? ["vacation-policies"] : null, () =>
+  const { data: policies } = useSWR(canReadMine ? ["vacation-policies"] : null, () =>
     getVacationPolicies(),
   );
 
@@ -74,22 +81,39 @@ export function VacationsPage() {
     isLoading: vacationsLoading,
     mutate: refreshVacations,
   } = useSWR(
-    canRead
-      ? ["vacations-list", statusFilter || "all", playerFilter || "all"]
+    canReadMine
+      ? [
+          "vacations-list",
+          canReadAll ? "all" : "mine",
+          statusFilter || "all",
+          playerFilter || "all",
+          page,
+          pageSize,
+        ]
       : null,
-    () =>
-      listVacations({
+    () => {
+      const payload = {
         status: statusFilter || undefined,
-        playerId: playerFilter ? Number(playerFilter) : undefined,
-        limit: 100,
-        offset: 0,
-      }),
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
+      };
+      if (canReadAll) {
+        return listVacations({
+          ...payload,
+          playerId: playerFilter ? Number(playerFilter) : undefined,
+        });
+      }
+      return listMyVacations(payload);
+    },
   );
 
   const vacationRows = useMemo(() => (Array.isArray(vacations) ? vacations : []), [vacations]);
+  const pageVacationRows = useMemo(() => vacationRows.slice(0, pageSize), [vacationRows, pageSize]);
+  const hasNextPage = vacationRows.length > pageSize;
+
   const filteredVacationRows = useMemo(
     () =>
-      vacationRows.filter((vacation) =>
+      pageVacationRows.filter((vacation) =>
         includesSearchQuery(vacation, searchQuery, [
           "public_id",
           "player_id",
@@ -100,13 +124,17 @@ export function VacationsPage() {
           "expected_return_date",
         ]),
       ),
-    [vacationRows, searchQuery],
+    [pageVacationRows, searchQuery],
   );
 
   const selectedVacation = useMemo(
-    () => vacationRows.find((row) => row.public_id === selectedPublicId) || null,
-    [vacationRows, selectedPublicId],
+    () => pageVacationRows.find((row) => row.public_id === selectedPublicId) || null,
+    [pageVacationRows, selectedPublicId],
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, playerFilter]);
 
   if (!canAccess) {
     return (
@@ -234,7 +262,7 @@ export function VacationsPage() {
             </div>
             <h2 className="cb-feature-title mt-3 text-4xl">Vacations</h2>
           </div>
-          {canRead ? (
+          {canReadMine ? (
             <Button
               variant="ghost"
               startContent={<RefreshCw size={15} />}
@@ -248,7 +276,7 @@ export function VacationsPage() {
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <section className="space-y-4">
-          {canRead ? (
+          {canReadMine ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="flex flex-wrap items-center gap-3">
                 <label className="text-sm text-white/80">Status</label>
@@ -264,13 +292,20 @@ export function VacationsPage() {
                   <option value="returned">returned</option>
                   <option value="cancelled">cancelled</option>
                 </FormSelect>
-                <label className="text-sm text-white/80">Player ID</label>
-                <FormInput
-                  value={playerFilter}
-                  onChange={(event) => setPlayerFilter(event.target.value)}
-                  placeholder="filter by player id"
-                  className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
+
+                {canReadAll ? (
+                  <>
+                    <label className="text-sm text-white/80">Player ID</label>
+                    <FormInput
+                      value={playerFilter}
+                      onChange={(event) => setPlayerFilter(event.target.value)}
+                      placeholder="filter by player id"
+                      className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                  </>
+                ) : (
+                  <p className="text-xs text-white/60">Showing your own vacation requests only.</p>
+                )}
               </div>
               <div className="mt-3">
                 <DashboardSearchField
@@ -289,7 +324,7 @@ export function VacationsPage() {
             </Card>
           ) : null}
 
-          {canRead ? (
+          {canReadMine ? (
             <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
               <div className="mb-2 flex items-center justify-between px-2 py-1">
                 <p className="text-sm text-white/70">
@@ -336,6 +371,18 @@ export function VacationsPage() {
                   </div>
                 ) : null}
               </div>
+              <ListPaginationBar
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(nextPageSize) => {
+                  setPageSize(nextPageSize);
+                  setPage(1);
+                }}
+                hasNextPage={hasNextPage}
+                isLoading={vacationsLoading}
+                visibleCount={filteredVacationRows.length}
+              />
             </Card>
           ) : (
             <Card className="border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
@@ -355,98 +402,106 @@ export function VacationsPage() {
           ) : null}
         </section>
 
-                <section className="space-y-4">
+        <section className="space-y-4">
           {canSubmit ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <FormSectionDisclosure
-  title={<><span className="inline-flex items-center gap-2">
+                title={
+                  <>
+                    <span className="inline-flex items-center gap-2">
                       <Plus size={14} />
                       Submit Vacation Request
-                    </span></>}
->
-<form className="space-y-3" onSubmit={handleCreate}>
-                      <FormInput
-                        name="leaveDate"
-                        type="date"
-                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                      />
-                      <FormInput
-                        name="expectedReturnDate"
-                        type="date"
-                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                      />
-                      <FormInput
-                        name="targetGroup"
-                        placeholder="Target group while away (optional)"
-                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                      />
-                      <FormTextarea
-                        name="reason"
-                        rows={3}
-                        placeholder="Reason (optional)"
-                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                      />
-                      <Button type="submit" color="warning" startContent={<Plus size={14} />}>
-                        Submit Request
-                      </Button>
-                    </form>
-</FormSectionDisclosure>
+                    </span>
+                  </>
+                }
+              >
+                <form className="space-y-3" onSubmit={handleCreate}>
+                  <FormInput
+                    name="leaveDate"
+                    type="date"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormInput
+                    name="expectedReturnDate"
+                    type="date"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormInput
+                    name="targetGroup"
+                    placeholder="Target group while away (optional)"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormTextarea
+                    name="reason"
+                    rows={3}
+                    placeholder="Reason (optional)"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <Button type="submit" color="warning" startContent={<Plus size={14} />}>
+                    Submit Request
+                  </Button>
+                </form>
+              </FormSectionDisclosure>
             </Card>
           ) : null}
 
           {selectedVacation && (canApprove || canDeny || canCancel) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <FormSectionDisclosure
-  title={<><span className="inline-flex items-center gap-2">
+                title={
+                  <>
+                    <span className="inline-flex items-center gap-2">
                       <CalendarCheck2 size={14} />
                       Review Request {selectedVacation.public_id}
-                    </span></>}
->
-<FormTextarea
-                      rows={3}
-                      value={reviewComment}
-                      onChange={(event) => setReviewComment(event.target.value)}
-                      placeholder="Reviewer comment"
-                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                    />
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {canApprove ? (
-                        <>
-                          <Button
-                            color="warning"
-                            variant="flat"
-                            startContent={<CalendarCheck2 size={14} />}
-                            onPress={handleApprove}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="flat"
-                            startContent={<CalendarArrowUp size={14} />}
-                            onPress={handleMarkReturned}
-                          >
-                            Mark Returned
-                          </Button>
-                        </>
-                      ) : null}
-                      {canDeny ? (
-                        <Button
-                          color="danger"
-                          variant="flat"
-                          startContent={<CircleX size={14} />}
-                          onPress={handleDeny}
-                        >
-                          Deny
-                        </Button>
-                      ) : null}
-                      {canCancel &&
-                      selectedVacation.requester_user_id === Number(currentUser?.userId) ? (
-                        <Button variant="ghost" onPress={handleCancel}>
-                          Cancel Own Request
-                        </Button>
-                      ) : null}
-                    </div>
-</FormSectionDisclosure>
+                    </span>
+                  </>
+                }
+              >
+                <FormTextarea
+                  rows={3}
+                  value={reviewComment}
+                  onChange={(event) => setReviewComment(event.target.value)}
+                  placeholder="Reviewer comment"
+                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {canApprove ? (
+                    <>
+                      <Button
+                        color="warning"
+                        variant="flat"
+                        startContent={<CalendarCheck2 size={14} />}
+                        onPress={handleApprove}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="flat"
+                        startContent={<CalendarArrowUp size={14} />}
+                        onPress={handleMarkReturned}
+                      >
+                        Mark Returned
+                      </Button>
+                    </>
+                  ) : null}
+                  {canDeny ? (
+                    <Button
+                      color="danger"
+                      variant="flat"
+                      startContent={<CircleX size={14} />}
+                      onPress={handleDeny}
+                    >
+                      Deny
+                    </Button>
+                  ) : null}
+                  {canCancel &&
+                  selectedVacation.requester_user_id === Number(currentUser?.userId) ? (
+                    <Button variant="ghost" onPress={handleCancel}>
+                      Cancel Own Request
+                    </Button>
+                  ) : null}
+                </div>
+              </FormSectionDisclosure>
             </Card>
           ) : null}
 
