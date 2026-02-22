@@ -3,7 +3,7 @@ import { ArrowRight, FileText, LogIn, ScrollText, ShieldAlert } from "lucide-rea
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useSWR from "swr";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectSessionStatus } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";

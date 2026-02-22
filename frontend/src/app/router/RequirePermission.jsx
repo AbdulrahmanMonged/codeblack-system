@@ -8,7 +8,7 @@ import { hasAnyPermissionSet, hasPermissionSet } from "../../core/permissions/gu
 import { RequireAuth } from "./RequireAuth.jsx";
 import { Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "../../shared/ui/toast.jsx";
 
 export function RequirePermission({
   requiredPermissions = [],

@@ -2,7 +2,7 @@ import { Button, Chip } from "@heroui/react";
 import { Bell, LogOut, Menu, ShieldCheck, UserCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useSWR from "swr";
-import { toast } from "sonner";
+import { toast } from "../ui/toast.jsx";
 import { useAppDispatch, useAppSelector } from "../../app/store/hooks.js";
 import {
   clearSession,

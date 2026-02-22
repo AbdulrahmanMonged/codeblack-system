@@ -5,7 +5,7 @@ import { Clock4, SearchCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { z } from "zod";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { FormInput } from "../../../shared/ui/FormControls.jsx";

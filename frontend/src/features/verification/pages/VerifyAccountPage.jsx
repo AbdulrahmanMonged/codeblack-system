@@ -2,7 +2,7 @@ import { Button, Card, Chip } from "@heroui/react";
 import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 import useSWR from "swr";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
 import {
   selectCurrentUser,

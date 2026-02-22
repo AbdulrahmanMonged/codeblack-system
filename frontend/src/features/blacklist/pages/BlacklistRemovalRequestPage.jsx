@@ -3,7 +3,7 @@ import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import dayjs from "dayjs";
 import { ArrowRight, RotateCcw, ShieldAlert } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import {
   checkBlacklistRemovalEligibility,
