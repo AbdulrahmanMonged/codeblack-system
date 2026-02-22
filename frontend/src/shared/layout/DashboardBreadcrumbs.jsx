@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { matchPath, useLocation } from "react-router-dom";
+import { matchPath, useLocation, useNavigate } from "react-router-dom";
 import { Breadcrumbs } from "@heroui/react";
 import { APP_NAV_SECTIONS } from "../../app/router/navigation.js";
 
@@ -115,6 +115,7 @@ function buildBreadcrumbItems(pathname) {
 
 export function DashboardBreadcrumbs() {
   const location = useLocation();
+  const navigate = useNavigate();
   const breadcrumbs = useMemo(
     () => buildBreadcrumbItems(location.pathname),
     [location.pathname],
@@ -126,7 +127,10 @@ export function DashboardBreadcrumbs() {
       className="overflow-x-auto rounded-xl border border-border/40 bg-background/60 px-3 py-2 backdrop-blur"
     >
       {breadcrumbs.map((item, index) => (
-        <Breadcrumbs.Item key={`${item.label}-${index}`} href={item.to}>
+        <Breadcrumbs.Item
+          key={`${item.label}-${index}`}
+          onPress={item.to ? () => navigate(item.to) : undefined}
+        >
           {item.label}
         </Breadcrumbs.Item>
       ))}
