@@ -60,6 +60,15 @@ require_cmd() {
   fi
 }
 
+match_active_cmds() {
+  local text="$1"
+  if command -v rg >/dev/null 2>&1; then
+    printf '%s\n' "${text}" | rg -q "python|celery|npm|node|vite"
+    return
+  fi
+  printf '%s\n' "${text}" | grep -Eq "python|celery|npm|node|vite"
+}
+
 port_in_use() {
   local port="$1"
   if command -v ss >/dev/null 2>&1; then
@@ -86,7 +95,6 @@ ensure_port_free() {
 ensure_prereqs() {
   require_cmd tmux
   require_cmd npm
-  require_cmd rg
 
   if [[ -z "${BACKEND_VENV}" || ! -x "${BACKEND_PY}" ]]; then
     echo "Missing backend venv python at ${BACKEND_PY}" >&2
@@ -124,7 +132,7 @@ session_has_active_services() {
   if [[ -z "${pane_cmds}" ]]; then
     return 1
   fi
-  if echo "${pane_cmds}" | rg -q "python|celery|npm|node|vite"; then
+  if match_active_cmds "${pane_cmds}"; then
     return 0
   fi
   return 1
