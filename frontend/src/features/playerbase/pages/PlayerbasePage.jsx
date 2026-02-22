@@ -17,6 +17,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import {
   createPlayer,
@@ -306,10 +307,11 @@ export function PlayerbasePage() {
         </section>
 
         <section className="space-y-4">
+          
           {canWritePlayerbase ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Create Player</p>
-              <form className="space-y-3" onSubmit={handleCreatePlayer}>
+            <FormSectionDisclosure title="Create Player" defaultExpanded>
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+                <form className="space-y-3" onSubmit={handleCreatePlayer}>
                 <FormInput
                   name="ingameName"
                   placeholder="In-game name"
@@ -334,8 +336,9 @@ export function PlayerbasePage() {
                 <Button type="submit" color="warning" startContent={<Plus size={14} />}>
                   Create Player
                 </Button>
-              </form>
-            </Card>
+                </form>
+              </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
@@ -408,10 +411,11 @@ export function PlayerbasePage() {
             ) : null}
           </Card>
 
+          
           {canWritePunishments ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Create Punishment</p>
-              <form className="space-y-3" onSubmit={handleCreatePunishment}>
+            <FormSectionDisclosure title="Create Punishment">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+                <form className="space-y-3" onSubmit={handleCreatePunishment}>
                 <FormInput
                   name="punishmentType"
                   placeholder="Type (e.g. warn, suspension)"
@@ -439,12 +443,14 @@ export function PlayerbasePage() {
                 <Button type="submit" variant="ghost" startContent={<Plus size={14} />}>
                   Create Punishment
                 </Button>
-              </form>
-            </Card>
+                </form>
+              </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {canWritePunishments && selectedPunishment ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Update Punishment">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Update Punishment #{selectedPunishment.id}</p>
               <div className="space-y-3">
                 <FormSelect
@@ -467,6 +473,7 @@ export function PlayerbasePage() {
                 </Button>
               </div>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
         </section>
       </div>

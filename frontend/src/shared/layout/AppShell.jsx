@@ -1,5 +1,4 @@
-import { Button, Disclosure } from "@heroui/react";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAppDispatch } from "../../app/store/hooks.js";
 import { closeSidebar } from "../../app/store/slices/uiSlice.js";
@@ -9,46 +8,9 @@ import { GlobalFooter } from "./GlobalFooter.jsx";
 import { GlobalNavbar } from "./GlobalNavbar.jsx";
 import { DashboardBreadcrumbs } from "./DashboardBreadcrumbs.jsx";
 
-function toTitleCase(value) {
-  return String(value || "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function resolveWorkspaceLabel(pathname) {
-  const path = String(pathname || "");
-
-  if (path === "/dashboard") return "Dashboard";
-  if (path.startsWith("/admin/review-queue")) return "Review Queue";
-  if (path.startsWith("/admin/audit")) return "Audit Timeline";
-  if (path.startsWith("/permissions/role-matrix")) return "Role Matrix";
-  if (path.startsWith("/config/registry")) return "Config Registry";
-  if (path.startsWith("/bot/control")) return "Bot Control";
-  if (path.startsWith("/verify-account")) return "Verify Account";
-
-  const segments = path.split("/").filter(Boolean);
-  if (!segments.length) {
-    return "Workspace";
-  }
-
-  const lastSegment = segments[segments.length - 1];
-  if (lastSegment && !/^[A-Za-z]{2,}-\d+$/i.test(lastSegment) && !/^\d+$/.test(lastSegment)) {
-    return toTitleCase(lastSegment);
-  }
-
-  return toTitleCase(segments[0]);
-}
-
 export function AppShell() {
   const dispatch = useAppDispatch();
   const location = useLocation();
-
-  const workspaceLabel = useMemo(
-    () => resolveWorkspaceLabel(location.pathname),
-    [location.pathname],
-  );
 
   useEffect(() => {
     dispatch(closeSidebar());
@@ -65,20 +27,7 @@ export function AppShell() {
           <div className="mb-4">
             <DashboardBreadcrumbs />
           </div>
-
-          <Disclosure defaultExpanded>
-            <Disclosure.Heading>
-              <Button className="w-full justify-between" slot="trigger" variant="secondary">
-                {workspaceLabel} Workspace
-                <Disclosure.Indicator />
-              </Button>
-            </Disclosure.Heading>
-            <Disclosure.Content>
-              <Disclosure.Body className="mt-3 rounded-2xl border border-white/10 bg-black/30 p-3">
-                <AnimatedOutlet />
-              </Disclosure.Body>
-            </Disclosure.Content>
-          </Disclosure>
+          <AnimatedOutlet />
         </main>
         <div className="px-3 pb-3 md:px-6 md:pb-4">
           <GlobalFooter embedded />

@@ -22,6 +22,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import { listRoleMatrix, updateRoleMatrix } from "../api/permissions-api.js";
 
@@ -292,7 +293,8 @@ export function RoleMatrixPage() {
 
           <section className="space-y-4">
             {selectedRole ? (
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+              <FormSectionDisclosure title="Role Permission Editor" defaultExpanded>
+                <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="cb-title text-2xl">{selectedRole.name}</p>
@@ -387,6 +389,7 @@ export function RoleMatrixPage() {
                   </div>
                 )}
               </Card>
+              </FormSectionDisclosure>
             ) : (
               <EmptyBlock
                 title="Select a role"

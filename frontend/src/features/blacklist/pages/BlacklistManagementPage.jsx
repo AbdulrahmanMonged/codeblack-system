@@ -10,6 +10,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import {
   createBlacklistEntry,
   listBlacklistEntries,
@@ -270,7 +271,8 @@ export function BlacklistManagementPage() {
 
         <section className="space-y-4">
           {canAdd ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Add Blacklist Entry" defaultExpanded>
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Add Blacklist Entry</p>
               <form className="space-y-3" onSubmit={handleCreateEntry}>
                 <FormInput
@@ -321,10 +323,12 @@ export function BlacklistManagementPage() {
                 </Button>
               </form>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {selectedEntry && canUpdate ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Update Blacklist Entry">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Update Entry #{selectedEntry.blacklist_player_id}</p>
               <div className="space-y-3">
                 <FormInput
@@ -366,10 +370,12 @@ export function BlacklistManagementPage() {
                 </Button>
               </div>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {selectedEntry && canRemove ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Remove Blacklist Entry">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Remove Entry</p>
               <FormTextarea
                 rows={3}
@@ -388,6 +394,7 @@ export function BlacklistManagementPage() {
                 Remove from Blacklist
               </Button>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {!canAdd && !canUpdate && !canRemove ? (

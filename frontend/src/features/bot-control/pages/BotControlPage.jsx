@@ -18,6 +18,7 @@ import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions
 import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import {
   getBotChannels,
@@ -243,8 +244,9 @@ export function BotControlPage() {
         <section className="space-y-4">
           {canRead ? (
             <>
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                <p className="mb-3 cb-title text-xl">Channel Routing</p>
+              <FormSectionDisclosure title="Channel Routing" defaultExpanded>
+                <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+                  <p className="mb-3 cb-title text-xl">Channel Routing</p>
                 {channelsLoading ? <LoadingBlock label="Loading channel configuration..." /> : null}
                 <div className="space-y-3">
                   {CHANNEL_KEYS.map((key) => (
@@ -276,9 +278,11 @@ export function BotControlPage() {
                   </Button>
                 ) : null}
               </Card>
+              </FormSectionDisclosure>
 
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                <p className="mb-3 cb-title text-xl">Feature Toggles</p>
+              <FormSectionDisclosure title="Feature Toggles">
+                <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+                  <p className="mb-3 cb-title text-xl">Feature Toggles</p>
                 {featuresLoading ? <LoadingBlock label="Loading feature toggles..." /> : null}
                 <div className="space-y-2">
                   {FEATURE_KEYS.map((key) => (
@@ -312,6 +316,7 @@ export function BotControlPage() {
                   </Button>
                 ) : null}
               </Card>
+              </FormSectionDisclosure>
             </>
           ) : (
             <Card className="border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
@@ -340,7 +345,8 @@ export function BotControlPage() {
 
         <section className="space-y-4">
           {(canTriggerForumSync || canTriggerCopRefresh) ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Manual Triggers">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Manual Triggers</p>
               <div className="flex flex-wrap gap-2">
                 {canTriggerForumSync ? (
@@ -365,6 +371,7 @@ export function BotControlPage() {
                 ) : null}
               </div>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {canRead ? (

@@ -1,5 +1,6 @@
 import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import dayjs from "dayjs";
 import {
   CheckCheck,
@@ -768,7 +769,8 @@ export function ReviewQueuePage() {
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <section className="space-y-4">
-          <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+          <FormSectionDisclosure title="Queue Filters" defaultExpanded>
+            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
             <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
               <div className="relative">
                 <Search
@@ -833,6 +835,7 @@ export function ReviewQueuePage() {
               </label>
             </div>
           </Card>
+          </FormSectionDisclosure>
 
           {queueError ? (
             <Card className="border border-rose-300/25 bg-rose-300/10 p-4 shadow-2xl backdrop-blur-xl">
@@ -911,15 +914,17 @@ export function ReviewQueuePage() {
             {renderDetailSection()}
           </Card>
 
-          <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-            <div className="mb-3 flex items-center gap-2">
+          <FormSectionDisclosure title="Decision Actions" defaultExpanded>
+            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+              <div className="mb-3 flex items-center gap-2">
               <ShieldAlert size={15} className="text-amber-200" />
               <p className="text-sm text-white/80">
                 Decision actions enforce backend permissions and workflows.
               </p>
             </div>
             {renderActionSection()}
-          </Card>
+            </Card>
+          </FormSectionDisclosure>
         </section>
       </div>
     </div>

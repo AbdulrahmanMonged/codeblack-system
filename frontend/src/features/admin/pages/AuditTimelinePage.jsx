@@ -8,6 +8,7 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { getAuditTimeline } from "../api/admin-api.js";
@@ -100,7 +101,8 @@ export function AuditTimelinePage() {
         </div>
       </Card>
 
-      <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+      <FormSectionDisclosure title="Timeline Filters" defaultExpanded>
+        <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <FormInput
             value={search}
@@ -137,6 +139,7 @@ export function AuditTimelinePage() {
           ))}
         </div>
       </Card>
+      </FormSectionDisclosure>
 
       <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
         <div className="mb-2 flex items-center justify-between px-2 py-1">
