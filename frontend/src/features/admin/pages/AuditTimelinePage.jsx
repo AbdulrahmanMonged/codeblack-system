@@ -1,7 +1,7 @@
 import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import { Filter, RefreshCw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
@@ -10,6 +10,7 @@ import { hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { includesSearchQuery } from "../../../shared/utils/search.js";
@@ -33,6 +34,8 @@ export function AuditTimelinePage() {
   const [search, setSearch] = useState("");
   const [actorUserId, setActorUserId] = useState("");
   const [selectedEventTypes, setSelectedEventTypes] = useState(EVENT_TYPES);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const key = useMemo(
     () => [
@@ -40,8 +43,10 @@ export function AuditTimelinePage() {
       selectedEventTypes.join(","),
       search.trim(),
       actorUserId.trim(),
+      page,
+      pageSize,
     ],
-    [selectedEventTypes, search, actorUserId],
+    [selectedEventTypes, search, actorUserId, page, pageSize],
   );
 
   const {
@@ -54,21 +59,35 @@ export function AuditTimelinePage() {
       eventTypes: selectedEventTypes,
       search: search.trim() || undefined,
       actorUserId: actorUserId.trim() ? Number(actorUserId.trim()) : undefined,
-      limit: 100,
-      offset: 0,
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
     }),
   );
 
-  const filteredTimelineItems = (Array.isArray(timeline?.items) ? timeline.items : []).filter((item) =>
-    includesSearchQuery(item, search, [
-      "event_type",
-      "action",
-      "entity_type",
-      "entity_id",
-      "actor_user_id",
-      "summary",
-    ]),
+  const timelineItems = useMemo(
+    () => (Array.isArray(timeline?.items) ? timeline.items : []),
+    [timeline?.items],
   );
+  const filteredTimelineItems = useMemo(
+    () =>
+      timelineItems.filter((item) =>
+        includesSearchQuery(item, search, [
+          "event_type",
+          "action",
+          "entity_type",
+          "entity_id",
+          "actor_user_id",
+          "summary",
+        ]),
+      ),
+    [timelineItems, search],
+  );
+  const timelineTotal = Number(timeline?.total || 0);
+  const hasNextPage = page * pageSize < timelineTotal;
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedEventTypes, search, actorUserId]);
 
   if (!canRead) {
     return (
@@ -196,6 +215,19 @@ export function AuditTimelinePage() {
             />
           ) : null}
         </div>
+        <ListPaginationBar
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(nextPageSize) => {
+            setPageSize(nextPageSize);
+            setPage(1);
+          }}
+          hasNextPage={hasNextPage}
+          isLoading={timelineLoading}
+          visibleCount={filteredTimelineItems.length}
+          totalCount={timelineTotal}
+        />
       </Card>
 
       {timelineError ? (

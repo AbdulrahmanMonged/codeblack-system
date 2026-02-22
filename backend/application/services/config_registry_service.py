@@ -38,10 +38,20 @@ class ConfigRegistryService:
     def __init__(self) -> None:
         self.settings = get_settings()
 
-    async def list_entries(self, include_sensitive: bool) -> list[ConfigEntryResponse]:
+    async def list_entries(
+        self,
+        *,
+        include_sensitive: bool,
+        limit: int,
+        offset: int,
+    ) -> list[ConfigEntryResponse]:
         async with get_session() as session:
             repo = ConfigRegistryRepository(session)
-            entries = await repo.list_entries(include_sensitive=include_sensitive)
+            entries = await repo.list_entries(
+                include_sensitive=include_sensitive,
+                limit=limit,
+                offset=offset,
+            )
             return [ConfigEntryResponse.model_validate(entry) for entry in entries]
 
     async def upsert_entry(
@@ -180,11 +190,12 @@ class ConfigRegistryService:
         self,
         *,
         limit: int,
+        offset: int,
         include_sensitive_values: bool,
     ) -> list[ConfigChangeResponse]:
         async with get_session() as session:
             repo = ConfigRegistryRepository(session)
-            changes = await repo.list_changes(limit=limit)
+            changes = await repo.list_changes(limit=limit, offset=offset)
             results: list[ConfigChangeResponse] = []
             for change in changes:
                 before_json = change.before_json

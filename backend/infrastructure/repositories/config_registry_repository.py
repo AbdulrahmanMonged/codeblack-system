@@ -16,10 +16,17 @@ class ConfigRegistryRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def list_entries(self, *, include_sensitive: bool) -> Sequence[ConfigRegistry]:
+    async def list_entries(
+        self,
+        *,
+        include_sensitive: bool,
+        limit: int,
+        offset: int,
+    ) -> Sequence[ConfigRegistry]:
         stmt = select(ConfigRegistry).order_by(ConfigRegistry.key.asc())
         if not include_sensitive:
             stmt = stmt.where(ConfigRegistry.is_sensitive == False)  # noqa: E712
+        stmt = stmt.limit(limit).offset(offset)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -94,11 +101,17 @@ class ConfigRegistryRepository:
         await self.session.flush()
         return change
 
-    async def list_changes(self, *, limit: int) -> Sequence[ConfigChangeHistory]:
+    async def list_changes(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> Sequence[ConfigChangeHistory]:
         stmt = (
             select(ConfigChangeHistory)
             .order_by(ConfigChangeHistory.id.desc())
             .limit(limit)
+            .offset(offset)
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()

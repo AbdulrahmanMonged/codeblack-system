@@ -1,7 +1,7 @@
 import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import { Ban, CircleX, Plus, RefreshCw, ShieldAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -11,6 +11,7 @@ import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { includesSearchQuery } from "../../../shared/utils/search.js";
 import {
@@ -51,6 +52,8 @@ export function BlacklistManagementPage() {
   const [updateRoots, setUpdateRoots] = useState("");
   const [updateRemarks, setUpdateRemarks] = useState("");
   const [removalReason, setRemovalReason] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const {
     data: entries,
@@ -58,19 +61,21 @@ export function BlacklistManagementPage() {
     isLoading: entriesLoading,
     mutate: refreshEntries,
   } = useSWR(
-    canRead ? ["blacklist-entries", statusFilter || "all"] : null,
+    canRead ? ["blacklist-entries", statusFilter || "all", page, pageSize] : null,
     () =>
       listBlacklistEntries({
         status: statusFilter || undefined,
-        limit: 100,
-        offset: 0,
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
       }),
   );
 
   const entryRows = useMemo(() => (Array.isArray(entries) ? entries : []), [entries]);
+  const pageEntryRows = useMemo(() => entryRows.slice(0, pageSize), [entryRows, pageSize]);
+  const hasNextPage = entryRows.length > pageSize;
   const filteredEntries = useMemo(
     () =>
-      entryRows.filter((entry) =>
+      pageEntryRows.filter((entry) =>
         includesSearchQuery(entry, searchQuery, [
           "id",
           "blacklist_player_id",
@@ -82,13 +87,17 @@ export function BlacklistManagementPage() {
           "status",
         ]),
       ),
-    [entryRows, searchQuery],
+    [pageEntryRows, searchQuery],
   );
 
   const selectedEntry = useMemo(
-    () => entryRows.find((row) => String(row.id) === String(selectedEntryId)) || null,
-    [entryRows, selectedEntryId],
+    () => pageEntryRows.find((row) => String(row.id) === String(selectedEntryId)) || null,
+    [pageEntryRows, selectedEntryId],
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   if (!canAccess) {
     return (
@@ -280,6 +289,18 @@ export function BlacklistManagementPage() {
                   </div>
                 ) : null}
               </div>
+              <ListPaginationBar
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(nextPageSize) => {
+                  setPageSize(nextPageSize);
+                  setPage(1);
+                }}
+                hasNextPage={hasNextPage}
+                isLoading={entriesLoading}
+                visibleCount={filteredEntries.length}
+              />
             </Card>
           ) : (
             <Card className="border border-white/10 bg-black/40 p-4 backdrop-blur-xl">

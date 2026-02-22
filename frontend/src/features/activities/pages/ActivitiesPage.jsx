@@ -10,7 +10,7 @@ import {
   RefreshCw,
   ShieldAlert,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
@@ -20,6 +20,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
@@ -81,6 +82,8 @@ export function ActivitiesPage() {
   const [scheduledFor, setScheduledFor] = useState("");
   const [forumTopicId, setForumTopicId] = useState("");
   const [forceRetry, setForceRetry] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const {
     data: activities,
@@ -88,20 +91,25 @@ export function ActivitiesPage() {
     isLoading: activitiesLoading,
     mutate: refreshActivities,
   } = useSWR(
-    canRead ? ["activities-list", statusFilter || "all", typeFilter || "all"] : null,
+    canRead
+      ? ["activities-list", statusFilter || "all", typeFilter || "all", page, pageSize]
+      : null,
     () =>
       listActivities({
         status: statusFilter || undefined,
         activityType: typeFilter || undefined,
-        limit: 100,
-        offset: 0,
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
       }),
   );
 
   const activityRows = useMemo(() => normalizeActivityRows(activities), [activities]);
+  const pageActivityRows = useMemo(() => activityRows.slice(0, pageSize), [activityRows, pageSize]);
+  const hasNextPage = activityRows.length > pageSize;
+
   const filteredActivityRows = useMemo(
     () =>
-      activityRows.filter((activity) =>
+      pageActivityRows.filter((activity) =>
         includesSearchQuery(activity, searchQuery, [
           "public_id",
           "title",
@@ -111,13 +119,17 @@ export function ActivitiesPage() {
           "created_by_user_id",
         ]),
       ),
-    [activityRows, searchQuery],
+    [pageActivityRows, searchQuery],
   );
 
   const selectedActivity = useMemo(
-    () => activityRows.find((row) => row.public_id === selectedPublicId) || null,
-    [activityRows, selectedPublicId],
+    () => pageActivityRows.find((row) => row.public_id === selectedPublicId) || null,
+    [pageActivityRows, selectedPublicId],
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, typeFilter]);
 
   if (!canAccess) {
     return (
@@ -333,6 +345,18 @@ export function ActivitiesPage() {
                   </div>
                 ) : null}
               </div>
+              <ListPaginationBar
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(nextPageSize) => {
+                  setPageSize(nextPageSize);
+                  setPage(1);
+                }}
+                hasNextPage={hasNextPage}
+                isLoading={activitiesLoading}
+                visibleCount={filteredActivityRows.length}
+              />
             </Card>
           ) : (
             <Card className="border border-white/10 bg-black/40 p-4 backdrop-blur-xl">

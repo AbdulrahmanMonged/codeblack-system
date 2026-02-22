@@ -166,11 +166,20 @@ class BackendIPCClient:
             "error": last_error,
         }
 
-    async def list_dead_letters(self, *, limit: int = 50) -> list[dict]:
+    async def list_dead_letters(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[dict]:
         redis = await self._client()
-        entries = await redis.xrevrange(self.dead_letter_stream, count=max(1, limit))
+        page_limit = max(1, int(limit))
+        page_offset = max(0, int(offset))
+        fetch_count = max(1, page_limit + page_offset)
+        entries = await redis.xrevrange(self.dead_letter_stream, count=fetch_count)
+        paged_entries = entries[page_offset : page_offset + page_limit]
         rows: list[dict] = []
-        for stream_id, fields in entries:
+        for stream_id, fields in paged_entries:
             decoded = self._decode_fields(fields)
             rows.append(
                 {

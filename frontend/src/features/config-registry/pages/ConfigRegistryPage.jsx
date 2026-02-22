@@ -9,7 +9,7 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -22,6 +22,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
@@ -76,6 +77,10 @@ export function ConfigRegistryPage() {
   const [previewResult, setPreviewResult] = useState(null);
   const [approvalReason, setApprovalReason] = useState("Approved by reviewer");
   const [rollbackReason, setRollbackReason] = useState("Rollback requested");
+  const [entryPage, setEntryPage] = useState(1);
+  const [entryPageSize, setEntryPageSize] = useState(20);
+  const [changePage, setChangePage] = useState(1);
+  const [changePageSize, setChangePageSize] = useState(20);
 
   const effectiveSensitiveFlag = isOwner && includeSensitive;
 
@@ -85,8 +90,15 @@ export function ConfigRegistryPage() {
     isLoading: entriesLoading,
     mutate: refreshEntries,
   } = useSWR(
-    canRead ? ["config-registry-entries", effectiveSensitiveFlag ? "sensitive" : "masked"] : null,
-    () => listConfigRegistry({ includeSensitive: effectiveSensitiveFlag }),
+    canRead
+      ? ["config-registry-entries", effectiveSensitiveFlag ? "sensitive" : "masked", entryPage, entryPageSize]
+      : null,
+    () =>
+      listConfigRegistry({
+        includeSensitive: effectiveSensitiveFlag,
+        limit: entryPageSize + 1,
+        offset: (entryPage - 1) * entryPageSize,
+      }),
   );
 
   const {
@@ -95,20 +107,27 @@ export function ConfigRegistryPage() {
     isLoading: changesLoading,
     mutate: refreshChanges,
   } = useSWR(
-    canRead ? ["config-registry-changes", effectiveSensitiveFlag ? "sensitive" : "masked"] : null,
+    canRead
+      ? ["config-registry-changes", effectiveSensitiveFlag ? "sensitive" : "masked", changePage, changePageSize]
+      : null,
     () =>
       listConfigChangesAdvanced({
-        limit: 120,
+        limit: changePageSize + 1,
+        offset: (changePage - 1) * changePageSize,
         includeSensitiveValues: effectiveSensitiveFlag,
       }),
   );
 
   const entryRows = useMemo(() => toArray(entries), [entries]);
   const changeRows = useMemo(() => toArray(changes), [changes]);
+  const pageEntryRows = useMemo(() => entryRows.slice(0, entryPageSize), [entryRows, entryPageSize]);
+  const pageChangeRows = useMemo(() => changeRows.slice(0, changePageSize), [changeRows, changePageSize]);
+  const hasEntryNextPage = entryRows.length > entryPageSize;
+  const hasChangeNextPage = changeRows.length > changePageSize;
 
   const filteredEntryRows = useMemo(
     () =>
-      entryRows.filter((entry) =>
+      pageEntryRows.filter((entry) =>
         includesSearchQuery(entry, searchQuery, [
           "key",
           "schema_version",
@@ -116,12 +135,12 @@ export function ConfigRegistryPage() {
           "updated_at",
         ]),
       ),
-    [entryRows, searchQuery],
+    [pageEntryRows, searchQuery],
   );
 
   const filteredChangeRows = useMemo(
     () =>
-      changeRows.filter((change) =>
+      pageChangeRows.filter((change) =>
         includesSearchQuery(change, searchQuery, [
           "id",
           "config_key",
@@ -131,13 +150,18 @@ export function ConfigRegistryPage() {
           "created_at",
         ]),
       ),
-    [changeRows, searchQuery],
+    [pageChangeRows, searchQuery],
   );
 
   const pendingChanges = useMemo(
     () => filteredChangeRows.filter((change) => change.status === "pending_approval"),
     [filteredChangeRows],
   );
+
+  useEffect(() => {
+    setEntryPage(1);
+    setChangePage(1);
+  }, [effectiveSensitiveFlag]);
 
   if (!canAccess) {
     return (
@@ -305,6 +329,18 @@ export function ConfigRegistryPage() {
                     inputClassName="w-full"
                   />
                 </div>
+                <ListPaginationBar
+                  page={entryPage}
+                  pageSize={entryPageSize}
+                  onPageChange={setEntryPage}
+                  onPageSizeChange={(nextPageSize) => {
+                    setEntryPageSize(nextPageSize);
+                    setEntryPage(1);
+                  }}
+                  hasNextPage={hasEntryNextPage}
+                  isLoading={entriesLoading}
+                  visibleCount={filteredEntryRows.length}
+                />
               </Card>
 
               <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
@@ -404,6 +440,18 @@ export function ConfigRegistryPage() {
                     />
                   ) : null}
                 </div>
+                <ListPaginationBar
+                  page={changePage}
+                  pageSize={changePageSize}
+                  onPageChange={setChangePage}
+                  onPageSizeChange={(nextPageSize) => {
+                    setChangePageSize(nextPageSize);
+                    setChangePage(1);
+                  }}
+                  hasNextPage={hasChangeNextPage}
+                  isLoading={changesLoading}
+                  visibleCount={filteredChangeRows.length}
+                />
               </Card>
             </>
           ) : (

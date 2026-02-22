@@ -193,10 +193,10 @@ class RosterService:
                 roster=roster,
             )
 
-    async def list_roster(self) -> list[dict]:
+    async def list_roster(self, *, limit: int, offset: int) -> list[dict]:
         async with get_session() as session:
             repo = RosterRepository(session)
-            memberships = await repo.list_memberships()
+            memberships = await repo.list_memberships(limit=limit, offset=offset)
             result: list[dict] = []
             for membership in memberships:
                 player = await repo.get_player_by_id(membership.player_id)

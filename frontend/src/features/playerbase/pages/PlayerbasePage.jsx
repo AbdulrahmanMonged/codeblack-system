@@ -7,7 +7,7 @@ import {
   ShieldAlert,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -17,6 +17,7 @@ import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import { includesSearchQuery } from "../../../shared/utils/search.js";
@@ -55,21 +56,26 @@ export function PlayerbasePage() {
   const [selectedPunishmentId, setSelectedPunishmentId] = useState("");
   const [punishmentStatus, setPunishmentStatus] = useState("active");
   const [punishmentExpiresAt, setPunishmentExpiresAt] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const {
     data: players,
     error: playersError,
     isLoading: playersLoading,
     mutate: refreshPlayers,
-  } = useSWR(canReadPlayerbase ? ["playerbase-players"] : null, () =>
-    listPlayers({ limit: 100, offset: 0 }),
+  } = useSWR(
+    canReadPlayerbase ? ["playerbase-players", page, pageSize] : null,
+    () => listPlayers({ limit: pageSize + 1, offset: (page - 1) * pageSize }),
   );
 
   const playerRows = useMemo(() => toArray(players), [players]);
+  const pagePlayerRows = useMemo(() => playerRows.slice(0, pageSize), [playerRows, pageSize]);
+  const hasNextPage = playerRows.length > pageSize;
 
   const filteredPlayers = useMemo(
     () =>
-      playerRows.filter((row) =>
+      pagePlayerRows.filter((row) =>
         includesSearchQuery(row, search, [
           "id",
           "ingame_name",
@@ -78,7 +84,7 @@ export function PlayerbasePage() {
           "country_code",
         ]),
       ),
-    [playerRows, search],
+    [pagePlayerRows, search],
   );
 
   const selectedPlayer = useMemo(
@@ -104,6 +110,12 @@ export function PlayerbasePage() {
     () => punishmentRows.find((row) => String(row.id) === String(selectedPunishmentId)) || null,
     [punishmentRows, selectedPunishmentId],
   );
+
+  useEffect(() => {
+    if (search.trim()) {
+      setPage(1);
+    }
+  }, [search]);
 
   if (!canAccess) {
     return (
@@ -280,6 +292,18 @@ export function PlayerbasePage() {
                   </div>
                 ) : null}
               </div>
+              <ListPaginationBar
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(nextPageSize) => {
+                  setPageSize(nextPageSize);
+                  setPage(1);
+                }}
+                hasNextPage={hasNextPage}
+                isLoading={playersLoading}
+                visibleCount={filteredPlayers.length}
+              />
             </Card>
           ) : (
             <Card className="border border-white/10 bg-black/40 p-4 backdrop-blur-xl">

@@ -34,8 +34,12 @@ export async function triggerBotCopScoresRefresh() {
   });
 }
 
-export async function listBotDeadLetters({ limit = 100 } = {}) {
-  return apiRequest(`/bot/dead-letter?limit=${encodeURIComponent(String(limit))}`, {
+export async function listBotDeadLetters({ limit = 100, offset = 0 } = {}) {
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return apiRequest(`/bot/dead-letter?${query.toString()}`, {
     method: "GET",
   });
 }
