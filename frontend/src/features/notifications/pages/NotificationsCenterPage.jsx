@@ -16,6 +16,7 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
@@ -376,7 +377,8 @@ export function NotificationsCenterPage() {
           ) : null}
 
           {canBroadcast ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Broadcast Notification" defaultExpanded>
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="mb-3 flex items-center gap-2">
                 <Megaphone size={15} className="text-amber-200" />
                 <p className="cb-title text-xl">Broadcast Notification</p>
@@ -435,10 +437,12 @@ export function NotificationsCenterPage() {
                 </Button>
               </form>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {canTargeted ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Targeted Notification">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="mb-3 flex items-center gap-2">
                 <Megaphone size={15} className="text-amber-200" />
                 <p className="cb-title text-xl">Targeted Notification</p>
@@ -500,6 +504,7 @@ export function NotificationsCenterPage() {
                 </Button>
               </form>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
         </section>
       </div>

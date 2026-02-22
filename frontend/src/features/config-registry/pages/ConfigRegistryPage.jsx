@@ -23,6 +23,7 @@ import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import {
   approveConfigChange,
@@ -390,7 +391,8 @@ export function ConfigRegistryPage() {
 
         <section className="space-y-4">
           {(canPreview || canWrite) ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Config Editor" defaultExpanded>
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="mb-3 flex items-center gap-2">
                 <ShieldCheck size={15} className="text-amber-200" />
                 <p className="cb-title text-xl">Editor</p>
@@ -454,10 +456,12 @@ export function ConfigRegistryPage() {
                 </div>
               </div>
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {canApprove ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Approval Note">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Approval Note</p>
               <FormTextarea
                 rows={3}
@@ -467,10 +471,12 @@ export function ConfigRegistryPage() {
                 className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
               />
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {canRollback ? (
-            <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Rollback Note">
+              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Rollback Note</p>
               <FormTextarea
                 rows={3}
@@ -480,6 +486,7 @@ export function ConfigRegistryPage() {
                 className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
               />
             </Card>
+            </FormSectionDisclosure>
           ) : null}
 
           {previewResult ? (
