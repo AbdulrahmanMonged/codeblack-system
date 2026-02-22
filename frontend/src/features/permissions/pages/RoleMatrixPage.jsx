@@ -1,15 +1,18 @@
 import {
   AlertDialog,
+  Autocomplete,
   Button,
   Card,
   Chip,
+  EmptyState,
   Header,
   Label,
   ListBox,
-  Select,
+  SearchField,
   Separator,
+  useFilter,
 } from "@heroui/react";
-import { CheckCheck, RefreshCw, Save, Search, ShieldAlert } from "lucide-react";
+import { CheckCheck, RefreshCw, Save, ShieldAlert } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
@@ -17,7 +20,6 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
-import { FormInput } from "../../../shared/ui/FormControls.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
@@ -88,12 +90,12 @@ function groupPermissionKeys(permissionKeys) {
 export function RoleMatrixPage() {
   const permissions = useAppSelector(selectPermissions);
   const isOwner = useAppSelector(selectIsOwner);
+  const { contains } = useFilter({ sensitivity: "base" });
 
   const canRead = hasPermissionSet(["discord_role_permissions.read"], permissions, isOwner);
   const canWrite = hasPermissionSet(["discord_role_permissions.write"], permissions, isOwner);
 
   const [selectedRoleId, setSelectedRoleId] = useState("");
-  const [permissionSearch, setPermissionSearch] = useState("");
   const [draftPermissions, setDraftPermissions] = useState([]);
   const [pendingRoleSwitch, setPendingRoleSwitch] = useState(null);
   const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
@@ -122,18 +124,14 @@ export function RoleMatrixPage() {
     [draftPermissions, selectedAssignedPermissions],
   );
 
-  const filteredPermissions = useMemo(() => {
-    const query = permissionSearch.trim().toLowerCase();
-    const source = selectedRole?.available_permissions || [];
-    if (!query) {
-      return source;
-    }
-    return source.filter((item) => String(item).toLowerCase().includes(query));
-  }, [permissionSearch, selectedRole?.available_permissions]);
+  const allPermissionKeys = useMemo(
+    () => sortUniquePermissions(selectedRole?.available_permissions || []),
+    [selectedRole?.available_permissions],
+  );
 
   const groupedPermissions = useMemo(
-    () => groupPermissionKeys(filteredPermissions),
-    [filteredPermissions],
+    () => groupPermissionKeys(allPermissionKeys),
+    [allPermissionKeys],
   );
 
   if (!canRead) {
@@ -172,13 +170,8 @@ export function RoleMatrixPage() {
   }
 
   function handlePermissionSelectionChange(selectionKeys) {
-    const visibleSelection = normalizeSelectionToArray(selectionKeys, filteredPermissions);
-    setDraftPermissions((previous) => {
-      const hiddenSelection = previous.filter(
-        (permissionKey) => !filteredPermissions.includes(permissionKey),
-      );
-      return sortUniquePermissions([...hiddenSelection, ...visibleSelection]);
-    });
+    const nextPermissions = normalizeSelectionToArray(selectionKeys, allPermissionKeys);
+    setDraftPermissions(sortUniquePermissions(nextPermissions));
   }
 
   async function handleSavePermissions() {
@@ -308,60 +301,63 @@ export function RoleMatrixPage() {
                   <Chip variant="flat">Draft: {draftPermissions.length} permissions</Chip>
                 </div>
 
-                <div className="mb-3">
-                  <FormInput
-                    label="Filter Permissions"
-                    value={permissionSearch}
-                    onChange={(event) => setPermissionSearch(String(event?.target?.value || ""))}
-                    placeholder="Filter permission keys..."
-                    startContent={<Search size={14} className="text-white/45" />}
-                    className="w-full"
-                  />
-                </div>
-
                 <div className="rounded-xl border border-white/10 bg-black/35 p-3">
-                  <Select
+                  <Autocomplete
                     className="w-full"
                     placeholder="Select permissions"
                     selectionMode="multiple"
                     selectedKeys={new Set(draftPermissions)}
-                    isDisabled={!canWrite || !filteredPermissions.length}
+                    isDisabled={!canWrite || !allPermissionKeys.length}
                     onSelectionChange={handlePermissionSelectionChange}
                   >
                     <Label>Permissions</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox selectionMode="multiple">
-                        {groupedPermissions.map((section, sectionIndex) => (
-                          <Fragment key={section.key}>
-                            <ListBox.Section>
-                              <Header>{section.label}</Header>
-                              {section.items.map((permissionKey) => (
-                                <ListBox.Item
-                                  key={permissionKey}
-                                  id={permissionKey}
-                                  textValue={permissionKey}
-                                >
-                                  {permissionKey}
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                              ))}
-                            </ListBox.Section>
-                            {sectionIndex < groupedPermissions.length - 1 ? <Separator /> : null}
-                          </Fragment>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
+                    <Autocomplete.Trigger>
+                      <Autocomplete.Value />
+                      <Autocomplete.ClearButton />
+                      <Autocomplete.Indicator />
+                    </Autocomplete.Trigger>
+                    <Autocomplete.Popover>
+                      <Autocomplete.Filter filter={contains}>
+                        <SearchField autoFocus name="search" variant="secondary">
+                          <SearchField.Group>
+                            <SearchField.SearchIcon />
+                            <SearchField.Input placeholder="Search permissions..." />
+                            <SearchField.ClearButton />
+                          </SearchField.Group>
+                        </SearchField>
 
-                  {filteredPermissions.length === 0 ? (
+                        <ListBox
+                          selectionMode="multiple"
+                          renderEmptyState={() => <EmptyState>No results found</EmptyState>}
+                        >
+                          {groupedPermissions.map((section, sectionIndex) => (
+                            <Fragment key={section.key}>
+                              <ListBox.Section>
+                                <Header>{section.label}</Header>
+                                {section.items.map((permissionKey) => (
+                                  <ListBox.Item
+                                    key={permissionKey}
+                                    id={permissionKey}
+                                    textValue={permissionKey}
+                                  >
+                                    {permissionKey}
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox.Section>
+                              {sectionIndex < groupedPermissions.length - 1 ? <Separator /> : null}
+                            </Fragment>
+                          ))}
+                        </ListBox>
+                      </Autocomplete.Filter>
+                    </Autocomplete.Popover>
+                  </Autocomplete>
+
+                  {allPermissionKeys.length === 0 ? (
                     <div className="mt-3">
                       <EmptyBlock
-                        title="No permissions matched"
-                        description="Try clearing the filter to see all available permissions."
+                        title="No permissions available"
+                        description="This role currently has no assignable permissions."
                       />
                     </div>
                   ) : null}
