@@ -107,8 +107,17 @@ class RosterRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_memberships(self) -> Sequence[GroupMembership]:
-        stmt = select(GroupMembership).order_by(GroupMembership.id.desc())
+    async def list_memberships(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        status: str | None = None,
+    ) -> Sequence[GroupMembership]:
+        stmt = select(GroupMembership)
+        if status is not None:
+            stmt = stmt.where(GroupMembership.status == status)
+        stmt = stmt.order_by(GroupMembership.id.desc()).limit(limit).offset(offset)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
