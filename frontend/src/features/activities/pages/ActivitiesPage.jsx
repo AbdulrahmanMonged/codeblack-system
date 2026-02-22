@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Disclosure } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CalendarClock,
@@ -323,114 +323,156 @@ export function ActivitiesPage() {
           ) : null}
         </section>
 
-        <section className="space-y-4">
+                <section className="space-y-4">
           {canCreate ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Create Activity</p>
-              <form className="space-y-3" onSubmit={handleCreate}>
-                <FormInput
-                  name="activityType"
-                  placeholder="Type (patrol/training/event)"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormInput
-                  name="title"
-                  placeholder="Title"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormInput
-                  name="durationMinutes"
-                  type="number"
-                  min={1}
-                  defaultValue={30}
-                  placeholder="Duration minutes"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormInput
-                  name="scheduledFor"
-                  type="datetime-local"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormTextarea
-                  name="notes"
-                  rows={3}
-                  placeholder="Notes"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <Button type="submit" color="warning" startContent={<Plus size={14} />}>
-                  Create Activity
-                </Button>
-              </form>
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <Plus size={14} />
+                      Create Activity
+                    </span>
+                    <Disclosure.Indicator />
+                  </Button>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <form className="space-y-3" onSubmit={handleCreate}>
+                      <FormInput
+                        name="activityType"
+                        placeholder="Type (patrol/training/event)"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <FormInput
+                        name="title"
+                        placeholder="Title"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <FormInput
+                        name="durationMinutes"
+                        type="number"
+                        min={1}
+                        defaultValue={30}
+                        placeholder="Duration minutes"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <FormInput
+                        name="scheduledFor"
+                        type="datetime-local"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <FormTextarea
+                        name="notes"
+                        rows={3}
+                        placeholder="Notes"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <Button type="submit" color="warning" startContent={<Plus size={14} />}>
+                        Create Activity
+                      </Button>
+                    </form>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
           {selectedActivity && (canApprove || canReject) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Review Activity {selectedActivity.public_id}</p>
-              <FormTextarea
-                rows={3}
-                value={reviewComment}
-                onChange={(event) => setReviewComment(event.target.value)}
-                placeholder="Review comment"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <FormInput
-                type="datetime-local"
-                value={scheduledFor}
-                onChange={(event) => setScheduledFor(event.target.value)}
-                className="mt-3 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                {canApprove ? (
-                  <Button
-                    color="warning"
-                    variant="flat"
-                    startContent={<CheckCircle2 size={14} />}
-                    onPress={handleApprove}
-                  >
-                    Approve / Schedule
+              <Disclosure defaultExpanded>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <CheckCircle2 size={14} />
+                      Review Activity {selectedActivity.public_id}
+                    </span>
+                    <Disclosure.Indicator />
                   </Button>
-                ) : null}
-                {canReject ? (
-                  <Button
-                    color="danger"
-                    variant="flat"
-                    startContent={<CircleX size={14} />}
-                    onPress={handleReject}
-                  >
-                    Reject
-                  </Button>
-                ) : null}
-              </div>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <FormTextarea
+                      rows={3}
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      placeholder="Review comment"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <FormInput
+                      type="datetime-local"
+                      value={scheduledFor}
+                      onChange={(event) => setScheduledFor(event.target.value)}
+                      className="mt-3 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {canApprove ? (
+                        <Button
+                          color="warning"
+                          variant="flat"
+                          startContent={<CheckCircle2 size={14} />}
+                          onPress={handleApprove}
+                        >
+                          Approve / Schedule
+                        </Button>
+                      ) : null}
+                      {canReject ? (
+                        <Button
+                          color="danger"
+                          variant="flat"
+                          startContent={<CircleX size={14} />}
+                          onPress={handleReject}
+                        >
+                          Reject
+                        </Button>
+                      ) : null}
+                    </div>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
           {selectedActivity && canPublish ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Publish to Forum</p>
-              <FormInput
-                value={forumTopicId}
-                onChange={(event) => setForumTopicId(event.target.value)}
-                placeholder="Forum topic ID (optional if already set)"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <label className="mt-3 inline-flex items-center gap-2 text-sm text-white/80">
-                <FormInput
-                  type="checkbox"
-                  checked={forceRetry}
-                  onChange={(event) => setForceRetry(event.target.checked)}
-                />
-                Force retry if already posted
-              </label>
-              <Button
-                className="mt-3"
-                color="warning"
-                variant="flat"
-                startContent={<Megaphone size={14} />}
-                onPress={handlePublish}
-              >
-                Publish
-              </Button>
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <Megaphone size={14} />
+                      Publish to Forum
+                    </span>
+                    <Disclosure.Indicator />
+                  </Button>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <FormInput
+                      value={forumTopicId}
+                      onChange={(event) => setForumTopicId(event.target.value)}
+                      placeholder="Forum topic ID (optional if already set)"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <label className="mt-3 inline-flex items-center gap-2 text-sm text-white/80">
+                      <FormInput
+                        type="checkbox"
+                        checked={forceRetry}
+                        onChange={(event) => setForceRetry(event.target.checked)}
+                      />
+                      Force retry if already posted
+                    </label>
+                    <Button
+                      className="mt-3"
+                      color="warning"
+                      variant="flat"
+                      startContent={<Megaphone size={14} />}
+                      onPress={handlePublish}
+                    >
+                      Publish
+                    </Button>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 

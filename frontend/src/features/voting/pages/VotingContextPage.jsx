@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, Chip } from "@heroui/react";
+import { Avatar, Button, Card, Chip, Disclosure } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import dayjs from "dayjs";
 import {
@@ -324,111 +324,153 @@ export function VotingContextPage() {
           ) : null}
         </section>
 
-        <section className="space-y-4">
+                <section className="space-y-4">
           {canCast ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Cast Vote</p>
-              <FormTextarea
-                rows={3}
-                value={voteComment}
-                onChange={(event) => setVoteComment(event.target.value)}
-                placeholder="Optional vote comment"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button color="warning" variant="flat" startContent={<CheckCircle2 size={14} />} onPress={() => handleVote("yes")}>
-                  Vote YES
-                </Button>
-                <Button color="danger" variant="flat" startContent={<CircleX size={14} />} onPress={() => handleVote("no")}>
-                  Vote NO
-                </Button>
-              </div>
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <CheckCircle2 size={14} />
+                      Cast Vote
+                    </span>
+                    <Disclosure.Indicator />
+                  </Button>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <FormTextarea
+                      rows={3}
+                      value={voteComment}
+                      onChange={(event) => setVoteComment(event.target.value)}
+                      placeholder="Optional vote comment"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button color="warning" variant="flat" startContent={<CheckCircle2 size={14} />} onPress={() => handleVote("yes")}>
+                        Vote YES
+                      </Button>
+                      <Button color="danger" variant="flat" startContent={<CircleX size={14} />} onPress={() => handleVote("no")}>
+                        Vote NO
+                      </Button>
+                    </div>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
           {(canClose || canReopen || canReset) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Moderation</p>
-              <FormTextarea
-                rows={3}
-                value={moderationReason}
-                onChange={(event) => setModerationReason(event.target.value)}
-                placeholder="Reason (optional)"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                {canClose ? (
-                  <Button color="danger" variant="flat" startContent={<LockKeyhole size={14} />} onPress={handleClose}>
-                    Close
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <LockKeyhole size={14} />
+                      Moderation
+                    </span>
+                    <Disclosure.Indicator />
                   </Button>
-                ) : null}
-                {canReopen ? (
-                  <Button color="warning" variant="flat" startContent={<Unlock size={14} />} onPress={handleReopen}>
-                    Reopen
-                  </Button>
-                ) : null}
-              </div>
-              {canReset ? (
-                <>
-                  <FormInput
-                    className="mt-3"
-                    type="checkbox"
-                    checked={reopenOnReset}
-                    onChange={(event) => setReopenOnReset(event.target.checked)}
-                  >
-                    Reopen context after reset
-                  </FormInput>
-                  <Button className="mt-3" variant="ghost" startContent={<RotateCcw size={14} />} onPress={handleReset}>
-                    Reset Votes
-                  </Button>
-                </>
-              ) : null}
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <FormTextarea
+                      rows={3}
+                      value={moderationReason}
+                      onChange={(event) => setModerationReason(event.target.value)}
+                      placeholder="Reason (optional)"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {canClose ? (
+                        <Button color="danger" variant="flat" startContent={<LockKeyhole size={14} />} onPress={handleClose}>
+                          Close
+                        </Button>
+                      ) : null}
+                      {canReopen ? (
+                        <Button color="warning" variant="flat" startContent={<Unlock size={14} />} onPress={handleReopen}>
+                          Reopen
+                        </Button>
+                      ) : null}
+                    </div>
+                    {canReset ? (
+                      <>
+                        <FormInput
+                          className="mt-3"
+                          type="checkbox"
+                          checked={reopenOnReset}
+                          onChange={(event) => setReopenOnReset(event.target.checked)}
+                        >
+                          Reopen context after reset
+                        </FormInput>
+                        <Button className="mt-3" variant="ghost" startContent={<RotateCcw size={14} />} onPress={handleReset}>
+                          Reset Votes
+                        </Button>
+                      </>
+                    ) : null}
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
           {isApplicationContext && canReviewApplications ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Final Decision</p>
-              <FormTextarea
-                rows={3}
-                value={decisionReason}
-                onChange={(event) => setDecisionReason(event.target.value)}
-                placeholder="Decision reason (required)"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <div className="mt-3 space-y-2">
-                <FormSelect
-                  value={reapplyPolicy}
-                  onChange={(event) => setReapplyPolicy(event.target.value)}
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                >
-                  <option value="allow_immediate">allow_immediate</option>
-                  <option value="cooldown">cooldown</option>
-                  <option value="permanent_block">permanent_block</option>
-                </FormSelect>
-                {reapplyPolicy === "cooldown" ? (
-                  <FormInput
-                    type="number"
-                    min={1}
-                    value={cooldownDays}
-                    onChange={(event) => setCooldownDays(event.target.value)}
-                    placeholder="Cooldown days"
-                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                  />
-                ) : null}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {canAcceptApplication ? (
-                  <Button color="success" variant="flat" onPress={() => handleDecision("accepted")}>
-                    Accept
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <ShieldAlert size={14} />
+                      Final Decision
+                    </span>
+                    <Disclosure.Indicator />
                   </Button>
-                ) : null}
-                {canDeclineApplication ? (
-                  <Button color="danger" variant="flat" onPress={() => handleDecision("declined")}>
-                    Decline
-                  </Button>
-                ) : null}
-              </div>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <FormTextarea
+                      rows={3}
+                      value={decisionReason}
+                      onChange={(event) => setDecisionReason(event.target.value)}
+                      placeholder="Decision reason (required)"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <div className="mt-3 space-y-2">
+                      <FormSelect
+                        value={reapplyPolicy}
+                        onChange={(event) => setReapplyPolicy(event.target.value)}
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      >
+                        <option value="allow_immediate">allow_immediate</option>
+                        <option value="cooldown">cooldown</option>
+                        <option value="permanent_block">permanent_block</option>
+                      </FormSelect>
+                      {reapplyPolicy === "cooldown" ? (
+                        <FormInput
+                          type="number"
+                          min={1}
+                          value={cooldownDays}
+                          onChange={(event) => setCooldownDays(event.target.value)}
+                          placeholder="Cooldown days"
+                          className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {canAcceptApplication ? (
+                        <Button color="success" variant="flat" onPress={() => handleDecision("accepted")}>
+                          Accept
+                        </Button>
+                      ) : null}
+                      {canDeclineApplication ? (
+                        <Button color="danger" variant="flat" onPress={() => handleDecision("declined")}>
+                          Decline
+                        </Button>
+                      ) : null}
+                    </div>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 

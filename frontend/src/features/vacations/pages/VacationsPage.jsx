@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Disclosure } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CalendarArrowUp,
@@ -323,86 +323,114 @@ export function VacationsPage() {
           ) : null}
         </section>
 
-        <section className="space-y-4">
+                <section className="space-y-4">
           {canSubmit ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Submit Vacation Request</p>
-              <form className="space-y-3" onSubmit={handleCreate}>
-                <FormInput
-                  name="leaveDate"
-                  type="date"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormInput
-                  name="expectedReturnDate"
-                  type="date"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormInput
-                  name="targetGroup"
-                  placeholder="Target group while away (optional)"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormTextarea
-                  name="reason"
-                  rows={3}
-                  placeholder="Reason (optional)"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <Button type="submit" color="warning" startContent={<Plus size={14} />}>
-                  Submit Request
-                </Button>
-              </form>
+              <Disclosure>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <Plus size={14} />
+                      Submit Vacation Request
+                    </span>
+                    <Disclosure.Indicator />
+                  </Button>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <form className="space-y-3" onSubmit={handleCreate}>
+                      <FormInput
+                        name="leaveDate"
+                        type="date"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <FormInput
+                        name="expectedReturnDate"
+                        type="date"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <FormInput
+                        name="targetGroup"
+                        placeholder="Target group while away (optional)"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <FormTextarea
+                        name="reason"
+                        rows={3}
+                        placeholder="Reason (optional)"
+                        className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                      />
+                      <Button type="submit" color="warning" startContent={<Plus size={14} />}>
+                        Submit Request
+                      </Button>
+                    </form>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
           {selectedVacation && (canApprove || canDeny || canCancel) ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 cb-title text-xl">Review Request {selectedVacation.public_id}</p>
-              <FormTextarea
-                rows={3}
-                value={reviewComment}
-                onChange={(event) => setReviewComment(event.target.value)}
-                placeholder="Reviewer comment"
-                className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                {canApprove ? (
-                  <>
-                    <Button
-                      color="warning"
-                      variant="flat"
-                      startContent={<CalendarCheck2 size={14} />}
-                      onPress={handleApprove}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="flat"
-                      startContent={<CalendarArrowUp size={14} />}
-                      onPress={handleMarkReturned}
-                    >
-                      Mark Returned
-                    </Button>
-                  </>
-                ) : null}
-                {canDeny ? (
-                  <Button
-                    color="danger"
-                    variant="flat"
-                    startContent={<CircleX size={14} />}
-                    onPress={handleDeny}
-                  >
-                    Deny
+              <Disclosure defaultExpanded>
+                <Disclosure.Heading>
+                  <Button slot="trigger" variant="secondary" className="w-full justify-between">
+                    <span className="inline-flex items-center gap-2">
+                      <CalendarCheck2 size={14} />
+                      Review Request {selectedVacation.public_id}
+                    </span>
+                    <Disclosure.Indicator />
                   </Button>
-                ) : null}
-                {canCancel &&
-                selectedVacation.requester_user_id === Number(currentUser?.userId) ? (
-                  <Button variant="ghost" onPress={handleCancel}>
-                    Cancel Own Request
-                  </Button>
-                ) : null}
-              </div>
+                </Disclosure.Heading>
+                <Disclosure.Content>
+                  <Disclosure.Body className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <FormTextarea
+                      rows={3}
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      placeholder="Reviewer comment"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {canApprove ? (
+                        <>
+                          <Button
+                            color="warning"
+                            variant="flat"
+                            startContent={<CalendarCheck2 size={14} />}
+                            onPress={handleApprove}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="flat"
+                            startContent={<CalendarArrowUp size={14} />}
+                            onPress={handleMarkReturned}
+                          >
+                            Mark Returned
+                          </Button>
+                        </>
+                      ) : null}
+                      {canDeny ? (
+                        <Button
+                          color="danger"
+                          variant="flat"
+                          startContent={<CircleX size={14} />}
+                          onPress={handleDeny}
+                        >
+                          Deny
+                        </Button>
+                      ) : null}
+                      {canCancel &&
+                      selectedVacation.requester_user_id === Number(currentUser?.userId) ? (
+                        <Button variant="ghost" onPress={handleCancel}>
+                          Cancel Own Request
+                        </Button>
+                      ) : null}
+                    </div>
+                  </Disclosure.Body>
+                </Disclosure.Content>
+              </Disclosure>
             </Card>
           ) : null}
 
