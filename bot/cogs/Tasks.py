@@ -92,11 +92,17 @@ class Tasks(commands.Cog):
                         channel.id,
                     )
             else:
-                # First run (no Redis key): do not purge channel history.
                 logger.info(
-                    "No live-scores message key found for channel %s; creating initial post without purge",
+                    "No live-scores message key found for channel %s; purging before initial post",
                     channel.id,
                 )
+                deleted_count = await self._clear_channel_messages(channel)
+                if deleted_count:
+                    logger.info(
+                        "Cleared %s message(s) from live-scores channel %s before initial post",
+                        deleted_count,
+                        channel.id,
+                    )
 
             image_binary.seek(0)
             file = discord.File(fp=image_binary, filename="cop_live_scores.png")
