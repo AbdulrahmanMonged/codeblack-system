@@ -49,6 +49,31 @@ async def list_public_posts(
     return [LandingPostResponse(**row) for row in payload]
 
 
+@router.get("/posts/{public_id}", response_model=LandingPostResponse)
+async def get_public_post(
+    public_id: str,
+    service: LandingService = Depends(get_landing_service),
+):
+    settings = get_settings()
+    cache_key = cache.build_key(
+        "public_post_detail",
+        {"public_id": public_id},
+    )
+    cached = await cache.get_json(cache_key)
+    if cached is not None:
+        return LandingPostResponse(**cached)
+
+    row = await service.get_post(public_id=public_id, published_only=True)
+    payload = LandingPostResponse(**row).model_dump(mode="json")
+    await cache.set_json(
+        key=cache_key,
+        value=jsonable_encoder(payload),
+        ttl_seconds=settings.BACKEND_CACHE_PUBLIC_TTL_SECONDS,
+        tags={"public_posts"},
+    )
+    return LandingPostResponse(**payload)
+
+
 @router.get("/metrics", response_model=PublicMetricsResponse)
 async def get_public_metrics(
     service: LandingService = Depends(get_landing_service),

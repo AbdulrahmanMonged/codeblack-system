@@ -1,5 +1,6 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
-import { ArrowRight, FileText, ScrollText, ShieldAlert } from "lucide-react";
+import { Button, Card, Chip, Separator, Spinner } from "@heroui/react";
+import dayjs from "dayjs";
+import { ArrowRight, CalendarDays, FileText, Link2, ScrollText, ShieldAlert } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -27,9 +28,7 @@ export function LandingPage() {
   const isAuthenticated = sessionStatus === "authenticated";
   const [isSignInRedirecting, setIsSignInRedirecting] = useState(false);
 
-  const { data: metrics, error: metricsError } = useSWR(["public-metrics"], () =>
-    getPublicMetrics(),
-  );
+  const { data: metrics, error: metricsError } = useSWR(["public-metrics"], () => getPublicMetrics());
   const { data: posts, error: postsError } = useSWR(["public-posts"], () =>
     listPublicPosts({ limit: 6, offset: 0 }),
   );
@@ -55,19 +54,21 @@ export function LandingPage() {
       <Card className="cb-feature-card border border-white/15 bg-black/55 shadow-2xl backdrop-blur-xl">
         <Card.Header className="space-y-3 p-7">
           <div className="flex flex-wrap items-center gap-2">
-            <Chip color="warning" variant="flat">CodeBlack Portal</Chip>
+            <Chip color="warning" variant="flat">
+              CodeBlack Portal
+            </Chip>
             <Chip variant="flat">Public modules + protected operations</Chip>
           </div>
           <Card.Title className="cb-feature-title text-4xl md:text-5xl">
             Operations And Recruitment Center
           </Card.Title>
           <Card.Description className="max-w-3xl text-sm text-white/80 md:text-base">
-            Public visitors can read roster, posts, and metrics. Protected actions require
-            Discord authentication and backend role permissions.
+            Public visitors can read roster, posts, and metrics. Protected actions require Discord
+            authentication and backend role permissions.
           </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-4 px-7 pb-7">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {isAuthenticated ? (
               <Button
                 color="warning"
@@ -96,7 +97,11 @@ export function LandingPage() {
                 )}
               </Button>
             )}
-            <Button variant="ghost" startContent={<FileText size={15} />} onPress={() => navigate("/applications/new")}>
+            <Button
+              variant="ghost"
+              startContent={<FileText size={15} />}
+              onPress={() => navigate("/applications/new")}
+            >
               Submit Application
             </Button>
             <Button variant="ghost" onPress={() => navigate("/roster-public")}>
@@ -162,25 +167,50 @@ export function LandingPage() {
         <p className="cb-title text-2xl">Latest Posts</p>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           {postRows.map((post) => (
-            <Card
-              key={post.public_id}
-              className="border border-white/10 bg-white/5 p-4"
-            >
+            <Card key={post.public_id} className="border border-white/10 bg-white/5 p-4">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-base font-semibold text-white">{post.title}</p>
-                <Chip size="sm" variant="flat">Published</Chip>
+                <Chip size="sm" variant="flat">
+                  Published
+                </Chip>
               </div>
-              <p className="mt-2 line-clamp-4 text-sm text-white/75">{post.content}</p>
+
+              <Separator className="my-3 bg-white/15" />
+
+              <p className="line-clamp-4 text-sm text-white/75">{post.content}</p>
+
               {post.media_url ? (
-                <a
-                  href={post.media_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block text-xs text-amber-200 underline decoration-dotted"
-                >
-                  Open media
-                </a>
+                <>
+                  <Separator className="my-3 bg-white/15" />
+                  <img
+                    src={post.media_url}
+                    alt={`${post.title} attachment`}
+                    className="h-44 w-full rounded-xl border border-white/15 object-cover"
+                    loading="lazy"
+                  />
+                </>
               ) : null}
+
+              <Separator className="my-3 bg-white/15" />
+
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/60">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays size={12} />
+                  {dayjs(post.published_at || post.updated_at).format("YYYY-MM-DD HH:mm")}
+                </span>
+                <Separator orientation="vertical" className="h-4 bg-white/20" />
+                <span className="inline-flex items-center gap-1.5">
+                  <Link2 size={12} />
+                  {post.public_id}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => navigate(`/posts/${post.public_id}`)}
+                >
+                  Read Post
+                </Button>
+              </div>
             </Card>
           ))}
           {!postRows.length ? (

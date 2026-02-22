@@ -27,6 +27,7 @@ import { VacationsPage } from "../../features/vacations/pages/VacationsPage.jsx"
 import { VerifyAccountPage } from "../../features/verification/pages/VerifyAccountPage.jsx";
 import { VotingContextPage } from "../../features/voting/pages/VotingContextPage.jsx";
 import { LandingPage } from "../../features/home/pages/LandingPage.jsx";
+import { PublicPostPage } from "../../features/home/pages/PublicPostPage.jsx";
 import { AppShell } from "../../shared/layout/AppShell.jsx";
 import { PublicLayout } from "../../shared/layout/PublicLayout.jsx";
 import { RootLayout } from "../../shared/layout/RootLayout.jsx";
@@ -60,6 +61,10 @@ export const appRouter = createBrowserRouter([
           {
             path: "roster-public",
             element: <PublicRosterPage />,
+          },
+          {
+            path: "posts/:postId",
+            element: <PublicPostPage />,
           },
         ],
       },
