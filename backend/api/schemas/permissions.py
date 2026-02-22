@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 
 
 class RolePermissionMatrixItem(BaseModel):
-    discord_role_id: int
-    guild_id: int
+    discord_role_id: str
+    guild_id: str
     name: str
     position: int
     is_active: bool
