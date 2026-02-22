@@ -16,10 +16,12 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import {
   broadcastNotification,
   deleteAllNotifications,
@@ -53,6 +55,7 @@ export function NotificationsCenterPage() {
   );
 
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicId, setSelectedPublicId] = useState("");
   const [metadataRaw, setMetadataRaw] = useState("{}");
 
@@ -72,6 +75,22 @@ export function NotificationsCenterPage() {
   );
 
   const notificationRows = useMemo(() => toArray(notifications), [notifications]);
+  const filteredNotificationRows = useMemo(
+    () =>
+      notificationRows.filter((item) =>
+        includesSearchQuery(item, searchQuery, [
+          "public_id",
+          "title",
+          "body",
+          "event_type",
+          "category",
+          "severity",
+          "entity_type",
+          "entity_public_id",
+        ]),
+      ),
+    [notificationRows, searchQuery],
+  );
 
   const selectedNotification = useMemo(
     () => notificationRows.find((item) => item.public_id === selectedPublicId) || null,
@@ -257,26 +276,37 @@ export function NotificationsCenterPage() {
           {canRead ? (
             <>
               <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                <label className="inline-flex items-center gap-2 text-sm text-white/80">
-                  <FormInput
-                    type="checkbox"
-                    checked={unreadOnly}
-                    onChange={(event) => setUnreadOnly(event.target.checked)}
+                <div className="space-y-3">
+                  <label className="inline-flex items-center gap-2 text-sm text-white/80">
+                    <FormInput
+                      type="checkbox"
+                      checked={unreadOnly}
+                      onChange={(event) => setUnreadOnly(event.target.checked)}
+                    />
+                    Show unread only
+                  </label>
+                  <DashboardSearchField
+                    label="Search Notifications"
+                    description="Search by ID, title, body, event type, category, severity, or entity reference."
+                    placeholder="Search notifications..."
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    className="w-full"
+                    inputClassName="w-full"
                   />
-                  Show unread only
-                </label>
+                </div>
               </Card>
 
               <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
                 <div className="mb-2 flex items-center justify-between px-2 py-1">
                   <p className="text-sm text-white/70">
                     Notifications:{" "}
-                    <span className="font-semibold text-white">{notificationRows.length}</span>
+                    <span className="font-semibold text-white">{filteredNotificationRows.length}</span>
                   </p>
                 </div>
                 <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
                   {notificationsLoading ? <LoadingBlock label="Loading notifications..." /> : null}
-                  {notificationRows.map((item) => {
+                  {filteredNotificationRows.map((item) => {
                     const active = item.public_id === selectedPublicId;
                     return (
                       <button
@@ -308,7 +338,7 @@ export function NotificationsCenterPage() {
                       </button>
                     );
                   })}
-                  {!notificationsLoading && notificationRows.length === 0 ? (
+                  {!notificationsLoading && filteredNotificationRows.length === 0 ? (
                     <EmptyBlock
                       title="No notifications found"
                       description="There are no notifications for the current filter."

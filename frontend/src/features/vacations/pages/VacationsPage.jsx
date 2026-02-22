@@ -20,7 +20,9 @@ import {
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import {
   approveVacation,
@@ -58,6 +60,7 @@ export function VacationsPage() {
 
   const [statusFilter, setStatusFilter] = useState("");
   const [playerFilter, setPlayerFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicId, setSelectedPublicId] = useState("");
   const [reviewComment, setReviewComment] = useState("");
 
@@ -83,9 +86,26 @@ export function VacationsPage() {
       }),
   );
 
+  const vacationRows = useMemo(() => (Array.isArray(vacations) ? vacations : []), [vacations]);
+  const filteredVacationRows = useMemo(
+    () =>
+      vacationRows.filter((vacation) =>
+        includesSearchQuery(vacation, searchQuery, [
+          "public_id",
+          "player_id",
+          "status",
+          "target_group",
+          "reason",
+          "leave_date",
+          "expected_return_date",
+        ]),
+      ),
+    [vacationRows, searchQuery],
+  );
+
   const selectedVacation = useMemo(
-    () => (vacations || []).find((row) => row.public_id === selectedPublicId) || null,
-    [vacations, selectedPublicId],
+    () => vacationRows.find((row) => row.public_id === selectedPublicId) || null,
+    [vacationRows, selectedPublicId],
   );
 
   if (!canAccess) {
@@ -252,6 +272,17 @@ export function VacationsPage() {
                   className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
               </div>
+              <div className="mt-3">
+                <DashboardSearchField
+                  label="Search Vacations"
+                  description="Search by request ID, player/account info, status, and reason."
+                  placeholder="Search vacation requests..."
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  className="w-full"
+                  inputClassName="w-full"
+                />
+              </div>
               <p className="mt-2 text-xs text-white/60">
                 Max duration policy: {policies?.max_duration_days || 7} days
               </p>
@@ -262,12 +293,12 @@ export function VacationsPage() {
             <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
               <div className="mb-2 flex items-center justify-between px-2 py-1">
                 <p className="text-sm text-white/70">
-                  Requests: <span className="font-semibold text-white">{vacations?.length || 0}</span>
+                  Requests: <span className="font-semibold text-white">{filteredVacationRows.length}</span>
                 </p>
                 {vacationsLoading ? <p className="text-xs text-white/55">Loading...</p> : null}
               </div>
               <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
-                {(vacations || []).map((vacation) => {
+                {filteredVacationRows.map((vacation) => {
                   const active = vacation.public_id === selectedPublicId;
                   return (
                     <button
@@ -299,7 +330,7 @@ export function VacationsPage() {
                     </button>
                   );
                 })}
-                {!vacationsLoading && (vacations || []).length === 0 ? (
+                {!vacationsLoading && filteredVacationRows.length === 0 ? (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                     No vacation requests found.
                   </div>

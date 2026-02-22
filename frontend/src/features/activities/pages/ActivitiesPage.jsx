@@ -19,7 +19,9 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import {
   approveActivity,
@@ -73,6 +75,7 @@ export function ActivitiesPage() {
 
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicId, setSelectedPublicId] = useState("");
   const [reviewComment, setReviewComment] = useState("");
   const [scheduledFor, setScheduledFor] = useState("");
@@ -96,6 +99,20 @@ export function ActivitiesPage() {
   );
 
   const activityRows = useMemo(() => normalizeActivityRows(activities), [activities]);
+  const filteredActivityRows = useMemo(
+    () =>
+      activityRows.filter((activity) =>
+        includesSearchQuery(activity, searchQuery, [
+          "public_id",
+          "title",
+          "activity_type",
+          "status",
+          "notes",
+          "created_by_user_id",
+        ]),
+      ),
+    [activityRows, searchQuery],
+  );
 
   const selectedActivity = useMemo(
     () => activityRows.find((row) => row.public_id === selectedPublicId) || null,
@@ -249,6 +266,17 @@ export function ActivitiesPage() {
                   className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 />
               </div>
+              <div className="mt-3">
+                <DashboardSearchField
+                  label="Search Activities"
+                  description="Search by ID, title, type, status, or notes."
+                  placeholder="Search activities..."
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  className="w-full"
+                  inputClassName="w-full"
+                />
+              </div>
             </Card>
           ) : null}
 
@@ -256,12 +284,12 @@ export function ActivitiesPage() {
             <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
               <div className="mb-2 flex items-center justify-between px-2 py-1">
                 <p className="text-sm text-white/70">
-                  Activities: <span className="font-semibold text-white">{activityRows.length}</span>
+                  Activities: <span className="font-semibold text-white">{filteredActivityRows.length}</span>
                 </p>
                 {activitiesLoading ? <p className="text-xs text-white/55">Loading...</p> : null}
               </div>
               <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
-                {activityRows.map((activity) => {
+                {filteredActivityRows.map((activity) => {
                   const active = activity.public_id === selectedPublicId;
                   return (
                     <button
@@ -299,7 +327,7 @@ export function ActivitiesPage() {
                     </button>
                   );
                 })}
-                {!activitiesLoading && activityRows.length === 0 ? (
+                {!activitiesLoading && filteredActivityRows.length === 0 ? (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                     No activities found.
                   </div>

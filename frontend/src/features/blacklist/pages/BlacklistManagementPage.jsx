@@ -10,7 +10,9 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import {
   createBlacklistEntry,
   listBlacklistEntries,
@@ -41,6 +43,7 @@ export function BlacklistManagementPage() {
   );
 
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedEntryId, setSelectedEntryId] = useState("");
   const [updateLevel, setUpdateLevel] = useState("1");
   const [updateAlias, setUpdateAlias] = useState("");
@@ -64,9 +67,27 @@ export function BlacklistManagementPage() {
       }),
   );
 
+  const entryRows = useMemo(() => (Array.isArray(entries) ? entries : []), [entries]);
+  const filteredEntries = useMemo(
+    () =>
+      entryRows.filter((entry) =>
+        includesSearchQuery(entry, searchQuery, [
+          "id",
+          "blacklist_player_id",
+          "alias",
+          "identity",
+          "serial",
+          "roots",
+          "remarks",
+          "status",
+        ]),
+      ),
+    [entryRows, searchQuery],
+  );
+
   const selectedEntry = useMemo(
-    () => (entries || []).find((row) => String(row.id) === String(selectedEntryId)) || null,
-    [entries, selectedEntryId],
+    () => entryRows.find((row) => String(row.id) === String(selectedEntryId)) || null,
+    [entryRows, selectedEntryId],
   );
 
   if (!canAccess) {
@@ -191,6 +212,15 @@ export function BlacklistManagementPage() {
                   <option value="active">active</option>
                   <option value="removed">removed</option>
                 </FormSelect>
+                <DashboardSearchField
+                  label="Search Blacklist"
+                  description="Search by blacklist ID, alias, identity, serial, roots, or remarks."
+                  placeholder="Search blacklist entries..."
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  className="w-full"
+                  inputClassName="w-full"
+                />
               </div>
             </Card>
           ) : null}
@@ -199,12 +229,12 @@ export function BlacklistManagementPage() {
             <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
               <div className="mb-2 flex items-center justify-between px-2 py-1">
                 <p className="text-sm text-white/70">
-                  Entries: <span className="font-semibold text-white">{entries?.length || 0}</span>
+                  Entries: <span className="font-semibold text-white">{filteredEntries.length}</span>
                 </p>
                 {entriesLoading ? <p className="text-xs text-white/55">Loading...</p> : null}
               </div>
               <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
-                {(entries || []).map((entry) => {
+                {filteredEntries.map((entry) => {
                   const active = String(entry.id) === String(selectedEntryId);
                   return (
                     <button
@@ -244,7 +274,7 @@ export function BlacklistManagementPage() {
                     </button>
                   );
                 })}
-                {!entriesLoading && (entries || []).length === 0 ? (
+                {!entriesLoading && filteredEntries.length === 0 ? (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                     No blacklist entries found.
                   </div>

@@ -1,5 +1,6 @@
 import { Button, Card, Chip } from "@heroui/react";
 import { FormSelect } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import dayjs from "dayjs";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -11,6 +12,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { getApplicationByPublicId, listApplications } from "../api/applications-api.js";
 
 function statusChipColor(status) {
@@ -33,6 +35,7 @@ export function ApplicationsPage() {
   const canReview = hasPermissionSet(["applications.review"], permissions, isOwner);
 
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicId, setSelectedPublicId] = useState(params.publicId || "");
 
   const {
@@ -51,6 +54,19 @@ export function ApplicationsPage() {
   );
 
   const rows = useMemo(() => toArray(applications), [applications]);
+  const filteredRows = useMemo(
+    () =>
+      rows.filter((row) =>
+        includesSearchQuery(row, searchQuery, [
+          "public_id",
+          "account_name",
+          "in_game_nickname",
+          "submitter_type",
+          "status",
+        ]),
+      ),
+    [rows, searchQuery],
+  );
   const selectedFromList = useMemo(
     () => rows.find((row) => row.public_id === selectedPublicId) || null,
     [rows, selectedPublicId],
@@ -104,7 +120,7 @@ export function ApplicationsPage() {
       <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr]">
         <section className="space-y-4">
           <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="grid gap-3 md:grid-cols-2">
               <FormSelect
                 id="applications-status-filter"
                 label="Status"
@@ -117,19 +133,33 @@ export function ApplicationsPage() {
                 <option value="accepted">accepted</option>
                 <option value="declined">declined</option>
               </FormSelect>
+              <DashboardSearchField
+                label="Search Applications"
+                description="Search by public ID, in-game nickname, account name, or status."
+                placeholder="Search applications..."
+                value={searchQuery}
+                onChange={setSearchQuery}
+                className="w-full"
+                inputClassName="w-full"
+              />
             </div>
+            {!listLoading && filteredRows.length === 0 ? (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                No applications matched the search filters.
+              </div>
+            ) : null}
           </Card>
 
           <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
             <div className="mb-2 flex items-center justify-between px-2 py-1">
               <p className="text-sm text-white/70">
-                Applications: <span className="font-semibold text-white">{rows.length}</span>
+                Applications: <span className="font-semibold text-white">{filteredRows.length}</span>
               </p>
               {listLoading ? <p className="text-xs text-white/55">Loading...</p> : null}
             </div>
 
             <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
-              {rows.map((row) => (
+              {filteredRows.map((row) => (
                 <button
                   key={row.public_id}
                   type="button"

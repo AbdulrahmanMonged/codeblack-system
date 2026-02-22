@@ -1,5 +1,6 @@
 import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import dayjs from "dayjs";
 import {
@@ -9,7 +10,6 @@ import {
   Filter,
   LoaderCircle,
   RefreshCw,
-  Search,
   ShieldAlert,
 } from "lucide-react";
 import { isValidElement, useEffect, useMemo, useState } from "react";
@@ -19,6 +19,7 @@ import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { getActivityByPublicId, approveActivity, rejectActivity } from "../../activities/api/activities-api.js";
 import {
   approveBlacklistRemovalRequest,
@@ -204,24 +205,51 @@ export function ReviewQueuePage() {
     }),
   );
 
-  const selectedItem = useMemo(() => {
-    const items = queueData?.items || [];
-    return items.find((item) => `${item.item_type}:${item.item_id}` === selectedKey) || null;
-  }, [queueData?.items, selectedKey]);
+  const queueItems = useMemo(
+    () => (Array.isArray(queueData?.items) ? queueData.items : []),
+    [queueData?.items],
+  );
+
+  const filteredQueueItems = useMemo(
+    () =>
+      queueItems.filter((item) =>
+        includesSearchQuery(item, searchInput, [
+          "item_type",
+          "item_id",
+          "title",
+          "subtitle",
+          "status",
+          "summary",
+          "actor_user_id",
+          "entity_public_id",
+          "metadata.account_name",
+          "metadata.in_game_nickname",
+          "metadata.ingame_name",
+          "metadata.player_id",
+          "metadata.public_id",
+        ]),
+      ),
+    [queueItems, searchInput],
+  );
+
+  const selectedItem = useMemo(
+    () => queueItems.find((item) => `${item.item_type}:${item.item_id}` === selectedKey) || null,
+    [queueItems, selectedKey],
+  );
 
   useEffect(() => {
-    if (!queueData?.items?.length) {
+    if (!filteredQueueItems.length) {
       setSelectedKey("");
       return;
     }
-    const keyExists = queueData.items.some(
+    const keyExists = filteredQueueItems.some(
       (item) => `${item.item_type}:${item.item_id}` === selectedKey,
     );
     if (!keyExists) {
-      const first = queueData.items[0];
+      const first = filteredQueueItems[0];
       setSelectedKey(`${first.item_type}:${first.item_id}`);
     }
-  }, [queueData, selectedKey]);
+  }, [filteredQueueItems, selectedKey]);
 
   useEffect(() => {
     setDecisionReason("");
@@ -771,24 +799,20 @@ export function ReviewQueuePage() {
         <section className="space-y-4">
           <FormSectionDisclosure title="Queue Filters">
             <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-              <div className="relative">
-                <Search
-                  size={14}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/50"
-                />
-                <FormInput
-                  type="text"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      setSearch(searchInput.trim());
-                    }
-                  }}
-                  placeholder="Search by ID/account/title..."
-                  className="w-full rounded-xl border border-white/15 bg-black/40 py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-amber-300/60"
-                />
-              </div>
+              <DashboardSearchField
+                label="Search Review Queue"
+                description="Search by item ID, account, in-game name, status, or summary."
+                placeholder="Search by ID/account/title..."
+                value={searchInput}
+                onChange={setSearchInput}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    setSearch(searchInput.trim());
+                  }
+                }}
+                className="w-full"
+                inputClassName="w-full"
+              />
               <FormSelect
                 value={status}
                 onChange={(event) => setStatus(event.target.value)}
@@ -846,7 +870,7 @@ export function ReviewQueuePage() {
           <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
             <div className="mb-2 flex items-center justify-between px-2 py-1">
               <p className="text-sm text-white/70">
-                Items: <span className="font-semibold text-white">{queueData?.total || 0}</span>
+                Items: <span className="font-semibold text-white">{filteredQueueItems.length}</span>
               </p>
               {queueLoading ? (
                 <p className="text-xs text-white/55">Loading...</p>
@@ -854,7 +878,7 @@ export function ReviewQueuePage() {
             </div>
 
             <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-              {(queueData?.items || []).map((item) => {
+              {filteredQueueItems.map((item) => {
                 const key = `${item.item_type}:${item.item_id}`;
                 const isActive = key === selectedKey;
                 return (
@@ -883,7 +907,7 @@ export function ReviewQueuePage() {
                   </button>
                 );
               })}
-              {!queueLoading && (queueData?.items || []).length === 0 ? (
+              {!queueLoading && filteredQueueItems.length === 0 ? (
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
                   No items matched the current filters.
                 </div>

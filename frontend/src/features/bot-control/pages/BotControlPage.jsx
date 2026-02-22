@@ -8,7 +8,7 @@ import {
   ServerCog,
   ShieldAlert,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -16,10 +16,12 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import {
   getBotChannels,
   getBotFeatures,
@@ -87,6 +89,7 @@ export function BotControlPage() {
   const [channelsDraft, setChannelsDraft] = useState({});
   const [featuresDraft, setFeaturesDraft] = useState({});
   const [dispatchLog, setDispatchLog] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     data: channelsData,
@@ -109,8 +112,35 @@ export function BotControlPage() {
     listBotDeadLetters({ limit: 100 }),
   );
 
-  const deadLetterRows = toArray(deadLetters);
-  const dispatchLogRows = toArray(dispatchLog);
+  const deadLetterRows = useMemo(() => toArray(deadLetters), [deadLetters]);
+  const dispatchLogRows = useMemo(() => toArray(dispatchLog), [dispatchLog]);
+
+  const filteredDeadLetterRows = useMemo(
+    () =>
+      deadLetterRows.filter((entry) =>
+        includesSearchQuery(entry, searchQuery, [
+          "stream_id",
+          "command_type",
+          "attempt_count",
+          "error",
+        ]),
+      ),
+    [deadLetterRows, searchQuery],
+  );
+
+  const filteredDispatchLogRows = useMemo(
+    () =>
+      dispatchLogRows.filter((entry) =>
+        includesSearchQuery(entry, searchQuery, [
+          "command_id",
+          "command_type",
+          "status",
+          "message",
+          "dead_letter_id",
+        ]),
+      ),
+    [dispatchLogRows, searchQuery],
+  );
 
   if (!canAccess) {
     return (
@@ -238,6 +268,18 @@ export function BotControlPage() {
             </Button>
           ) : null}
         </div>
+      </Card>
+
+      <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+        <DashboardSearchField
+          label="Search Bot Control"
+          description="Search by command ID, stream ID, command type, status, or error message."
+          placeholder="Search dispatch logs and dead letters..."
+          value={searchQuery}
+          onChange={setSearchQuery}
+          className="w-full"
+          inputClassName="w-full"
+        />
       </Card>
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
@@ -372,11 +414,11 @@ export function BotControlPage() {
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <p className="cb-title text-xl">Dead Letter Queue</p>
-                <Chip variant="flat">{deadLetterRows.length}</Chip>
+                <Chip variant="flat">{filteredDeadLetterRows.length}</Chip>
               </div>
               <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                 {deadLettersLoading ? <LoadingBlock label="Loading dead letters..." /> : null}
-                {deadLetterRows.map((entry) => (
+                {filteredDeadLetterRows.map((entry) => (
                   <div
                     key={entry.stream_id}
                     className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80"
@@ -399,7 +441,7 @@ export function BotControlPage() {
                     ) : null}
                   </div>
                 ))}
-                {!deadLettersLoading && deadLetterRows.length === 0 ? (
+                {!deadLettersLoading && filteredDeadLetterRows.length === 0 ? (
                   <EmptyBlock
                     title="Dead letter queue is empty"
                     description="No failed bot commands are waiting for replay."
@@ -419,7 +461,7 @@ export function BotControlPage() {
           <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
             <p className="mb-3 cb-title text-xl">Dispatch Log</p>
             <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-              {dispatchLogRows.map((entry, index) => (
+              {filteredDispatchLogRows.map((entry, index) => (
                 <pre
                   key={`${entry.command_id || entry.dead_letter_id || "log"}-${index}`}
                   className="overflow-x-auto rounded-xl border border-white/10 bg-white/5 p-3 text-[11px] text-white/75"
@@ -427,7 +469,7 @@ export function BotControlPage() {
                   {JSON.stringify(entry, null, 2)}
                 </pre>
               ))}
-              {dispatchLogRows.length === 0 ? (
+              {filteredDispatchLogRows.length === 0 ? (
                 <EmptyBlock
                   title="No dispatch operations yet"
                   description="Trigger or update actions will appear here with command responses."

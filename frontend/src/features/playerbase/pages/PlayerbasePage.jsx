@@ -4,7 +4,6 @@ import {
   BadgeAlert,
   Plus,
   RefreshCw,
-  Search,
   ShieldAlert,
   Users,
 } from "lucide-react";
@@ -17,8 +16,10 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import {
   createPlayer,
   createPunishment,
@@ -66,24 +67,19 @@ export function PlayerbasePage() {
 
   const playerRows = useMemo(() => toArray(players), [players]);
 
-  const filteredPlayers = useMemo(() => {
-    const rows = playerRows;
-    const query = search.trim().toLowerCase();
-    if (!query) {
-      return rows;
-    }
-    return rows.filter((row) => {
-      const ingameName = String(row.ingame_name || "").toLowerCase();
-      const accountName = String(row.account_name || "").toLowerCase();
-      const serial = String(row.mta_serial || "").toLowerCase();
-      return (
-        ingameName.includes(query) ||
-        accountName.includes(query) ||
-        serial.includes(query) ||
-        String(row.id).includes(query)
-      );
-    });
-  }, [playerRows, search]);
+  const filteredPlayers = useMemo(
+    () =>
+      playerRows.filter((row) =>
+        includesSearchQuery(row, search, [
+          "id",
+          "ingame_name",
+          "account_name",
+          "mta_serial",
+          "country_code",
+        ]),
+      ),
+    [playerRows, search],
+  );
 
   const selectedPlayer = useMemo(
     () => filteredPlayers.find((row) => String(row.id) === String(selectedPlayerId)) || null,
@@ -223,18 +219,15 @@ export function PlayerbasePage() {
         <section className="space-y-4">
           {canReadPlayerbase ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <div className="relative">
-                <Search
-                  size={14}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
-                />
-                <FormInput
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by ID, in-game, account, serial..."
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-9 py-2.5 text-sm text-white outline-none focus:border-amber-300/60"
-                />
-              </div>
+              <DashboardSearchField
+                label="Search Players"
+                description="Search by ID, in-game name, account name, serial, or country code."
+                placeholder="Search players..."
+                value={search}
+                onChange={setSearch}
+                className="w-full"
+                inputClassName="w-full"
+              />
             </Card>
           ) : null}
 

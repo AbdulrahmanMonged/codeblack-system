@@ -21,10 +21,12 @@ import {
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput, FormSelect, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import {
   approveConfigChange,
   listConfigChangesAdvanced,
@@ -65,6 +67,7 @@ export function ConfigRegistryPage() {
   );
 
   const [includeSensitive, setIncludeSensitive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [editorKey, setEditorKey] = useState("");
   const [editorValueRaw, setEditorValueRaw] = useState("{}");
   const [editorSchemaVersion, setEditorSchemaVersion] = useState("1");
@@ -103,9 +106,37 @@ export function ConfigRegistryPage() {
   const entryRows = useMemo(() => toArray(entries), [entries]);
   const changeRows = useMemo(() => toArray(changes), [changes]);
 
+  const filteredEntryRows = useMemo(
+    () =>
+      entryRows.filter((entry) =>
+        includesSearchQuery(entry, searchQuery, [
+          "key",
+          "schema_version",
+          "is_sensitive",
+          "updated_at",
+        ]),
+      ),
+    [entryRows, searchQuery],
+  );
+
+  const filteredChangeRows = useMemo(
+    () =>
+      changeRows.filter((change) =>
+        includesSearchQuery(change, searchQuery, [
+          "id",
+          "config_key",
+          "status",
+          "changed_by_user_id",
+          "change_reason",
+          "created_at",
+        ]),
+      ),
+    [changeRows, searchQuery],
+  );
+
   const pendingChanges = useMemo(
-    () => changeRows.filter((change) => change.status === "pending_approval"),
-    [changeRows],
+    () => filteredChangeRows.filter((change) => change.status === "pending_approval"),
+    [filteredChangeRows],
   );
 
   if (!canAccess) {
@@ -247,21 +278,32 @@ export function ConfigRegistryPage() {
           {canRead ? (
             <>
               <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center gap-2 text-sm text-white/80">
-                    <FormInput
-                      type="checkbox"
-                      checked={includeSensitive}
-                      disabled={!isOwner}
-                      onChange={(event) => setIncludeSensitive(event.target.checked)}
-                    />
-                    Include sensitive values (owner only)
-                  </label>
-                  {!isOwner ? (
-                    <Chip size="sm" variant="flat">
-                      masked mode
-                    </Chip>
-                  ) : null}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm text-white/80">
+                      <FormInput
+                        type="checkbox"
+                        checked={includeSensitive}
+                        disabled={!isOwner}
+                        onChange={(event) => setIncludeSensitive(event.target.checked)}
+                      />
+                      Include sensitive values (owner only)
+                    </label>
+                    {!isOwner ? (
+                      <Chip size="sm" variant="flat">
+                        masked mode
+                      </Chip>
+                    ) : null}
+                  </div>
+                  <DashboardSearchField
+                    label="Search Config Registry"
+                    description="Search by config key, change ID, status, reason, or schema version."
+                    placeholder="Search config entries and changes..."
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    className="w-full"
+                    inputClassName="w-full"
+                  />
                 </div>
               </Card>
 
@@ -269,7 +311,7 @@ export function ConfigRegistryPage() {
                 <p className="mb-3 cb-title text-xl">Registry Entries</p>
                 <div className="max-h-[35vh] space-y-2 overflow-y-auto pr-1">
                   {entriesLoading ? <LoadingBlock label="Loading registry entries..." /> : null}
-                  {entryRows.map((entry) => (
+                  {filteredEntryRows.map((entry) => (
                     <button
                       key={entry.key}
                       type="button"
@@ -293,7 +335,7 @@ export function ConfigRegistryPage() {
                       </p>
                     </button>
                   ))}
-                  {!entriesLoading && entryRows.length === 0 ? (
+                  {!entriesLoading && filteredEntryRows.length === 0 ? (
                     <EmptyBlock
                       title="No config entries found"
                       description="No configuration keys are currently available."
@@ -309,7 +351,7 @@ export function ConfigRegistryPage() {
                 </div>
                 <div className="max-h-[45vh] space-y-2 overflow-y-auto pr-1">
                   {changesLoading ? <LoadingBlock label="Loading config changes..." /> : null}
-                  {changeRows.map((change) => (
+                  {filteredChangeRows.map((change) => (
                     <div
                       key={change.id}
                       className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80"
@@ -355,7 +397,7 @@ export function ConfigRegistryPage() {
                       </div>
                     </div>
                   ))}
-                  {!changesLoading && changeRows.length === 0 ? (
+                  {!changesLoading && filteredChangeRows.length === 0 ? (
                     <EmptyBlock
                       title="No config changes found"
                       description="Change history is empty for current filters."
