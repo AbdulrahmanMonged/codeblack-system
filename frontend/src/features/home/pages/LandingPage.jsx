@@ -129,7 +129,12 @@ export function LandingPage() {
           <p className="text-sm text-white/75">
             Start with eligibility, then complete the guided 5-step application flow.
           </p>
-          <Button className="mt-4" variant="flat" color="warning" onPress={() => navigate("/applications/new")}>
+          <Button
+            className="mt-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-300/25 data-[hovered=true]:bg-amber-300/30"
+            variant="flat"
+            color="warning"
+            onPress={() => navigate("/applications/new")}
+          >
             Open Application Wizard
           </Button>
         </Card>
@@ -142,7 +147,12 @@ export function LandingPage() {
           <p className="text-sm text-white/75">
             Use the two-step removal request flow: pre-check then reason submission.
           </p>
-          <Button className="mt-4" variant="flat" color="warning" onPress={() => navigate("/blacklist/removal-request")}>
+          <Button
+            className="mt-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-300/25 data-[hovered=true]:bg-amber-300/30"
+            variant="flat"
+            color="warning"
+            onPress={() => navigate("/blacklist/removal-request")}
+          >
             Open Removal Request
           </Button>
         </Card>
