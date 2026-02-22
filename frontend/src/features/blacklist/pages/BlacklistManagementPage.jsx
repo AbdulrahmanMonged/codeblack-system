@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { Ban, CircleX, Plus, RefreshCw, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";

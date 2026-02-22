@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { CheckCircle2, Link2, ShieldAlert, UploadCloud } from "lucide-react";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import useSWR from "swr";
 import { z } from "zod";
 import { useAppSelector } from "../../../app/store/hooks.js";

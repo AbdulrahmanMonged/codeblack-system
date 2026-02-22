@@ -2,7 +2,7 @@ import { Button, Card, Spinner } from "@heroui/react";
 import { CheckCircle2, RefreshCw, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppDispatch, useAppSelector } from "../../../app/store/hooks.js";
 import {
   hydrationCompleted,

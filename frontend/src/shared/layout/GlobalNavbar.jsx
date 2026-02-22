@@ -3,7 +3,7 @@ import { Bell, DoorOpen, LayoutDashboard, LogIn, Menu, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useSWR from "swr";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "../ui/toast.jsx";
 import { useAppDispatch, useAppSelector } from "../../app/store/hooks.js";
 import {
   clearSession,

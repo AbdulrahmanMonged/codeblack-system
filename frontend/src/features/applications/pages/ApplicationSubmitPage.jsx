@@ -3,7 +3,7 @@ import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleX, ShieldAlert } from "lucide-react";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { extractApiErrorCode, extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { formatBytes } from "../../../shared/utils/formatting.js";
 import { checkApplicationEligibility, submitApplication } from "../api/applications-api.js";

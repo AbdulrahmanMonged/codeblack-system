@@ -4,7 +4,7 @@ import { CheckCircle2, CircleX, ExternalLink, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import useSWR from "swr";
-import { toast } from "sonner";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
 import {
   selectIsOwner,

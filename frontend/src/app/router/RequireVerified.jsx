@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "../../shared/ui/toast.jsx";
 import { useAppSelector } from "../store/hooks.js";
 import {
   selectIsOwner,
