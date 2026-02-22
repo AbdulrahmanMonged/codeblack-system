@@ -271,8 +271,7 @@ export function BlacklistManagementPage() {
 
         <section className="space-y-4">
           {canAdd ? (
-            <FormSectionDisclosure title="Add Blacklist Entry" defaultExpanded>
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Add Blacklist Entry">
               <p className="mb-3 cb-title text-xl">Add Blacklist Entry</p>
               <form className="space-y-3" onSubmit={handleCreateEntry}>
                 <FormInput
@@ -322,13 +321,11 @@ export function BlacklistManagementPage() {
                   Add Entry
                 </Button>
               </form>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 
           {selectedEntry && canUpdate ? (
             <FormSectionDisclosure title="Update Blacklist Entry">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Update Entry #{selectedEntry.blacklist_player_id}</p>
               <div className="space-y-3">
                 <FormInput
@@ -369,13 +366,11 @@ export function BlacklistManagementPage() {
                   Save Changes
                 </Button>
               </div>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 
           {selectedEntry && canRemove ? (
             <FormSectionDisclosure title="Remove Blacklist Entry">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Remove Entry</p>
               <FormTextarea
                 rows={3}
@@ -393,7 +388,6 @@ export function BlacklistManagementPage() {
               >
                 Remove from Blacklist
               </Button>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 

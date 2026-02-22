@@ -377,8 +377,7 @@ export function NotificationsCenterPage() {
           ) : null}
 
           {canBroadcast ? (
-            <FormSectionDisclosure title="Broadcast Notification" defaultExpanded>
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Broadcast Notification">
               <div className="mb-3 flex items-center gap-2">
                 <Megaphone size={15} className="text-amber-200" />
                 <p className="cb-title text-xl">Broadcast Notification</p>
@@ -436,13 +435,11 @@ export function NotificationsCenterPage() {
                   Send Broadcast
                 </Button>
               </form>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 
           {canTargeted ? (
             <FormSectionDisclosure title="Targeted Notification">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <div className="mb-3 flex items-center gap-2">
                 <Megaphone size={15} className="text-amber-200" />
                 <p className="cb-title text-xl">Targeted Notification</p>
@@ -503,7 +500,6 @@ export function NotificationsCenterPage() {
                   Send Targeted
                 </Button>
               </form>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
         </section>
