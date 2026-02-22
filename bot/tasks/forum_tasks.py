@@ -5,6 +5,7 @@ Celery tasks for forum operations (watching topics, fetching scores).
 import logging
 
 from bot.core.celery_app import celery_app
+from bot.tasks.async_runner import run_async
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,6 @@ def watch_topic(self, topic_type: str = "orders"):
     The actual new-post notification is pushed to Redis Stream
     for the Discord bot to pick up and relay to the channel.
     """
-    import asyncio
     from bot.core.redis import RedisManager
 
     async def _run():
@@ -64,13 +64,12 @@ def watch_topic(self, topic_type: str = "orders"):
 
         return {"new_post": False, "topic": topic_number}
 
-    return asyncio.run(_run())
+    return run_async(_run())
 
 
 @celery_app.task(bind=True, max_retries=2)
 def fetch_cop_scores(self):
     """Fetch live COP scores and push to Redis Stream."""
-    import asyncio
     from bot.core.redis import RedisManager
 
     async def _run():
@@ -99,4 +98,4 @@ def fetch_cop_scores(self):
 
         return scores
 
-    return asyncio.run(_run())
+    return run_async(_run())

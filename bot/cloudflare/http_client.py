@@ -21,6 +21,12 @@ class HttpClient:
     def set_proxy(self, proxy: str | None) -> None:
         self._proxy = proxy or None
 
+    async def get(self, url: str, **kwargs):
+        return await self.request("GET", url, **kwargs)
+
+    async def post(self, url: str, data: dict[str, Any] | None = None, **kwargs):
+        return await self.request("POST", url, data=data, **kwargs)
+
     async def request(
         self,
         method: str,

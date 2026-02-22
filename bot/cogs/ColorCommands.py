@@ -24,10 +24,13 @@ class ColorCommands(commands.Cog):
 
     async def _ensure_activity_sessions(self, players):
         """Check online players and create/close activity sessions as needed."""
-        activity_service = self.bot.activity_service
-        player_service = self.bot.player_service
-        current_time = time.time()
+        activity_service = getattr(self.bot, "activity_service", None)
+        player_service = getattr(self.bot, "player_service", None)
+        if activity_service is None or player_service is None:
+            logger.debug("Skipping activity sync: services are not initialized")
+            return
 
+        current_time = time.time()
         online_account_names = {p.get("account_name") for p in players if p.get("account_name")}
 
         # Check for players who went offline
@@ -72,7 +75,10 @@ class ColorCommands(commands.Cog):
 
     async def _check_offline_players(self, online_account_names, current_time):
         """Close sessions for players who went offline."""
-        activity_service = self.bot.activity_service
+        activity_service = getattr(self.bot, "activity_service", None)
+        if activity_service is None:
+            logger.debug("Skipping offline activity check: activity service is not initialized")
+            return
 
         try:
             active_sessions = await activity_service.get_active_sessions()
@@ -116,7 +122,11 @@ class ColorCommands(commands.Cog):
 
     @tasks.loop(seconds=30.0)
     async def update_online_players_image(self):
-        scraper = self.bot.scraper_service
+        scraper = getattr(self.bot, "scraper_service", None)
+        if scraper is None:
+            logger.debug("Skipping online players tick: scraper service not initialized")
+            return
+
         redis_key = f"codeblack:online_players:{ONLINE_PLAYERS_CHANNEL_ID}:msg_id"
 
         try:
@@ -163,6 +173,7 @@ class ColorCommands(commands.Cog):
     async def before_update_online_players_image(self):
         await self.bot.wait_until_ready()
         logger.info("Online players image updater task started!")
+
 
 
 def setup(bot):

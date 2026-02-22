@@ -1,4 +1,5 @@
 import logging
+
 import discord
 from discord.ext import commands, tasks
 
@@ -24,7 +25,11 @@ class Tasks(commands.Cog):
     @tasks.loop(seconds=30.0)
     async def watch_cop_live_scores(self):
         """Watch for cop live scores and update Discord image"""
-        scraper_service = self.bot.scraper_service
+        scraper_service = getattr(self.bot, "scraper_service", None)
+        if scraper_service is None:
+            logger.debug("Skipping cop score tick: scraper service not initialized")
+            return
+
         redis_key = f"codeblack:cop_scores:{TOP_SCORES_LIVE_CHANNEL_ID}:msg_id"
 
         try:
@@ -68,6 +73,7 @@ class Tasks(commands.Cog):
     async def before_watch_cop_live_scores(self):
         await self.bot.wait_until_ready()
         logger.info("Cop live scores watcher task started!")
+
 
 
 def setup(bot):

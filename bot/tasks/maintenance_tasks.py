@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timedelta
 
 from bot.core.celery_app import celery_app
+from bot.tasks.async_runner import run_async
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ def refresh_session():
     Pre-emptively refresh the Cloudflare session.
     Runs every 12 hours via Celery Beat.
     """
-    import asyncio
     from bot.core.redis import RedisManager
 
     async def _run():
@@ -36,7 +36,7 @@ def refresh_session():
         logger.info(f"Session refresh: {'success' if success else 'failed'}")
         return {"success": success}
 
-    return asyncio.run(_run())
+    return run_async(_run())
 
 
 @celery_app.task
@@ -45,7 +45,6 @@ def cleanup_stale_sessions():
     Close any player activity sessions that have been open for too long
     (e.g., bot missed a logout event).
     """
-    import asyncio
     from bot.core.redis import RedisManager
 
     async def _run():
@@ -77,4 +76,4 @@ def cleanup_stale_sessions():
         logger.info(f"Closed {closed} stale sessions")
         return {"closed": closed}
 
-    return asyncio.run(_run())
+    return run_async(_run())
