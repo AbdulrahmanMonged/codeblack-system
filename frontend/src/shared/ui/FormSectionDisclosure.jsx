@@ -10,20 +10,17 @@ export function FormSectionDisclosure({
   return (
     <Disclosure defaultExpanded={defaultExpanded}>
       <Disclosure.Heading>
-        <Button
-          className={cn(
-            "w-full justify-between border border-white/15 bg-black/35 text-white/90 hover:bg-white/10",
-            triggerClassName,
-          )}
-          slot="trigger"
-          variant="secondary"
-        >
+        <Button slot="trigger" variant="secondary" className={cn("w-full justify-between", triggerClassName)}>
           {title}
           <Disclosure.Indicator />
         </Button>
       </Disclosure.Heading>
       <Disclosure.Content>
-        <Disclosure.Body className={cn("mt-2 p-0", bodyClassName)}>{children}</Disclosure.Body>
+        <Disclosure.Body
+          className={cn("mt-3 rounded-xl border border-white/10 bg-white/5 p-3", bodyClassName)}
+        >
+          {children}
+        </Disclosure.Body>
       </Disclosure.Content>
     </Disclosure>
   );

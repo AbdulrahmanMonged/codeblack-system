@@ -244,9 +244,8 @@ export function BotControlPage() {
         <section className="space-y-4">
           {canRead ? (
             <>
-              <FormSectionDisclosure title="Channel Routing" defaultExpanded>
-                <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                  <p className="mb-3 cb-title text-xl">Channel Routing</p>
+              <FormSectionDisclosure title="Channel Routing">
+                <p className="mb-3 cb-title text-xl">Channel Routing</p>
                 {channelsLoading ? <LoadingBlock label="Loading channel configuration..." /> : null}
                 <div className="space-y-3">
                   {CHANNEL_KEYS.map((key) => (
@@ -277,12 +276,10 @@ export function BotControlPage() {
                     Save Channel Config
                   </Button>
                 ) : null}
-              </Card>
-              </FormSectionDisclosure>
+            </FormSectionDisclosure>
 
               <FormSectionDisclosure title="Feature Toggles">
-                <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                  <p className="mb-3 cb-title text-xl">Feature Toggles</p>
+                <p className="mb-3 cb-title text-xl">Feature Toggles</p>
                 {featuresLoading ? <LoadingBlock label="Loading feature toggles..." /> : null}
                 <div className="space-y-2">
                   {FEATURE_KEYS.map((key) => (
@@ -315,8 +312,7 @@ export function BotControlPage() {
                     Save Feature Toggles
                   </Button>
                 ) : null}
-              </Card>
-              </FormSectionDisclosure>
+            </FormSectionDisclosure>
             </>
           ) : (
             <Card className="border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
@@ -346,7 +342,6 @@ export function BotControlPage() {
         <section className="space-y-4">
           {(canTriggerForumSync || canTriggerCopRefresh) ? (
             <FormSectionDisclosure title="Manual Triggers">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Manual Triggers</p>
               <div className="flex flex-wrap gap-2">
                 {canTriggerForumSync ? (
@@ -370,7 +365,6 @@ export function BotControlPage() {
                   </Button>
                 ) : null}
               </div>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 

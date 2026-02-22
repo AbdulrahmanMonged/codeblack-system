@@ -391,8 +391,7 @@ export function ConfigRegistryPage() {
 
         <section className="space-y-4">
           {(canPreview || canWrite) ? (
-            <FormSectionDisclosure title="Config Editor" defaultExpanded>
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            <FormSectionDisclosure title="Config Editor">
               <div className="mb-3 flex items-center gap-2">
                 <ShieldCheck size={15} className="text-amber-200" />
                 <p className="cb-title text-xl">Editor</p>
@@ -455,13 +454,11 @@ export function ConfigRegistryPage() {
                   ) : null}
                 </div>
               </div>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 
           {canApprove ? (
             <FormSectionDisclosure title="Approval Note">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Approval Note</p>
               <FormTextarea
                 rows={3}
@@ -470,13 +467,11 @@ export function ConfigRegistryPage() {
                 placeholder="Reason used when approving pending config changes"
                 className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
               />
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 
           {canRollback ? (
             <FormSectionDisclosure title="Rollback Note">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Rollback Note</p>
               <FormTextarea
                 rows={3}
@@ -485,7 +480,6 @@ export function ConfigRegistryPage() {
                 placeholder="Reason used when rolling back a config key"
                 className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
               />
-            </Card>
             </FormSectionDisclosure>
           ) : null}
 

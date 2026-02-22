@@ -309,9 +309,8 @@ export function PlayerbasePage() {
         <section className="space-y-4">
           
           {canWritePlayerbase ? (
-            <FormSectionDisclosure title="Create Player" defaultExpanded>
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                <form className="space-y-3" onSubmit={handleCreatePlayer}>
+            <FormSectionDisclosure title="Create Player">
+              <form className="space-y-3" onSubmit={handleCreatePlayer}>
                 <FormInput
                   name="ingameName"
                   placeholder="In-game name"
@@ -337,7 +336,6 @@ export function PlayerbasePage() {
                   Create Player
                 </Button>
                 </form>
-              </Card>
             </FormSectionDisclosure>
           ) : null}
 
@@ -414,8 +412,7 @@ export function PlayerbasePage() {
           
           {canWritePunishments ? (
             <FormSectionDisclosure title="Create Punishment">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-                <form className="space-y-3" onSubmit={handleCreatePunishment}>
+              <form className="space-y-3" onSubmit={handleCreatePunishment}>
                 <FormInput
                   name="punishmentType"
                   placeholder="Type (e.g. warn, suspension)"
@@ -444,13 +441,11 @@ export function PlayerbasePage() {
                   Create Punishment
                 </Button>
                 </form>
-              </Card>
             </FormSectionDisclosure>
           ) : null}
 
           {canWritePunishments && selectedPunishment ? (
             <FormSectionDisclosure title="Update Punishment">
-              <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
               <p className="mb-3 cb-title text-xl">Update Punishment #{selectedPunishment.id}</p>
               <div className="space-y-3">
                 <FormSelect
@@ -472,7 +467,6 @@ export function PlayerbasePage() {
                   Save Punishment
                 </Button>
               </div>
-            </Card>
             </FormSectionDisclosure>
           ) : null}
         </section>

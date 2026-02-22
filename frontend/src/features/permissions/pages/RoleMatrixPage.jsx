@@ -293,8 +293,7 @@ export function RoleMatrixPage() {
 
           <section className="space-y-4">
             {selectedRole ? (
-              <FormSectionDisclosure title="Role Permission Editor" defaultExpanded>
-                <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+              <FormSectionDisclosure title="Role Permission Editor">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="cb-title text-2xl">{selectedRole.name}</p>
@@ -388,8 +387,7 @@ export function RoleMatrixPage() {
                     <p>Read-only mode. You need discord_role_permissions.write to modify this matrix.</p>
                   </div>
                 )}
-              </Card>
-              </FormSectionDisclosure>
+            </FormSectionDisclosure>
             ) : (
               <EmptyBlock
                 title="Select a role"
