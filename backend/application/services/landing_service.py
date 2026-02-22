@@ -34,6 +34,24 @@ class LandingService:
             )
             return [self._post_to_dict(row) for row in rows]
 
+
+    async def get_post(
+        self,
+        *,
+        public_id: str,
+        published_only: bool,
+    ) -> dict:
+        async with get_session() as session:
+            repo = LandingRepository(session)
+            row = await repo.get_post_by_public_id(public_id)
+            if row is None or (published_only and not row.is_published):
+                raise ApiException(
+                    status_code=404,
+                    error_code="LANDING_POST_NOT_FOUND",
+                    message=f"Landing post {public_id} not found",
+                )
+            return self._post_to_dict(row)
+
     async def create_post(
         self,
         *,

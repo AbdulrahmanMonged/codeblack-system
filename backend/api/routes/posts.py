@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.encoders import jsonable_encoder
 
 from backend.api.deps.auth import get_current_principal, require_permissions
 from backend.api.schemas.landing import (
     LandingPostCreateRequest,
+    LandingPostMediaUploadResponse,
     LandingPostPublishRequest,
     LandingPostResponse,
     LandingPostUpdateRequest,
@@ -13,7 +16,9 @@ from backend.api.schemas.landing import (
 from backend.application.dto.auth import AuthenticatedPrincipal
 from backend.application.services.landing_service import LandingService
 from backend.core.config import get_settings
+from backend.core.errors import ApiException
 from backend.infrastructure.cache.redis_cache import cache
+from backend.infrastructure.storage.uploader import StorageUploader
 
 router = APIRouter()
 
@@ -105,3 +110,53 @@ async def set_post_publish_state(
     )
     await cache.invalidate_tags("posts", "public_posts")
     return LandingPostResponse(**row)
+
+
+@router.post("/media/upload", response_model=LandingPostMediaUploadResponse)
+async def upload_post_media(
+    media_file: UploadFile = File(...),
+    principal: AuthenticatedPrincipal = Depends(require_permissions("posts.write")),
+):
+    data, content_type, ext = await _validate_post_media_upload(media_file)
+    uploader = StorageUploader()
+    uploaded = await uploader.upload_bytes(
+        key=f"posts/{principal.discord_user_id}/{uuid4().hex}_attachment.{ext}",
+        data=data,
+        content_type=content_type,
+    )
+    return LandingPostMediaUploadResponse(
+        media_url=uploaded.url,
+        media_key=uploaded.key,
+        content_type=uploaded.content_type,
+        size_bytes=uploaded.size_bytes,
+    )
+
+
+async def _validate_post_media_upload(upload: UploadFile) -> tuple[bytes, str, str]:
+    allowed = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/webp": "webp",
+        "image/gif": "gif",
+    }
+    content_type = upload.content_type or ""
+    if content_type not in allowed:
+        raise ApiException(
+            status_code=422,
+            error_code="INVALID_POST_MEDIA_TYPE",
+            message="media_file must be png, jpeg, webp, or gif",
+        )
+    data = await upload.read()
+    if not data:
+        raise ApiException(
+            status_code=422,
+            error_code="EMPTY_POST_MEDIA",
+            message="media_file cannot be empty",
+        )
+    if len(data) > 12 * 1024 * 1024:
+        raise ApiException(
+            status_code=422,
+            error_code="POST_MEDIA_TOO_LARGE",
+            message="media_file must be <= 12MB",
+        )
+    return data, content_type, allowed[content_type]

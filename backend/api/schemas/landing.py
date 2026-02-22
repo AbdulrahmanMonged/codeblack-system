@@ -40,6 +40,13 @@ class LandingPostPublishRequest(BaseModel):
     is_published: bool
 
 
+class LandingPostMediaUploadResponse(BaseModel):
+    media_url: str
+    media_key: str
+    content_type: str
+    size_bytes: int
+
+
 class PublicMetricsResponse(BaseModel):
     members_count: int
     current_level: str

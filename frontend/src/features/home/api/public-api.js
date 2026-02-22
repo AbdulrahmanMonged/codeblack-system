@@ -8,6 +8,14 @@ export async function listPublicPosts({ limit = 20, offset = 0 } = {}) {
   return apiRequest(`/public/posts?${query.toString()}`, { method: "GET" });
 }
 
+
+
+export async function getPublicPost(publicId) {
+  return apiRequest(`/public/posts/${encodeURIComponent(String(publicId || "").trim())}`, {
+    method: "GET",
+  });
+}
+
 export async function getPublicMetrics() {
   return apiRequest("/public/metrics", { method: "GET" });
 }

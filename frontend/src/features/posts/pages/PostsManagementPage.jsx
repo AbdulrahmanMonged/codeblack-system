@@ -1,20 +1,26 @@
-import { Button, Card, Chip } from "@heroui/react";
-import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
-import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
-import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
-import { Check, PencilLine, Plus, RefreshCw } from "lucide-react";
+import { Check, ImagePlus, PencilLine, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { toast } from "../../../shared/ui/toast.jsx";
 import { useAppSelector } from "../../../app/store/hooks.js";
 import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
+import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
+import { toast } from "../../../shared/ui/toast.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
 import { includesSearchQuery } from "../../../shared/utils/search.js";
-import { createPost, listPosts, publishPost, updatePost } from "../api/posts-api.js";
+import {
+  createPost,
+  listPosts,
+  publishPost,
+  updatePost,
+  uploadPostMedia,
+} from "../api/posts-api.js";
 
 export function PostsManagementPage() {
   const permissions = useAppSelector(selectPermissions);
@@ -26,9 +32,16 @@ export function PostsManagementPage() {
 
   const [selectedPublicId, setSelectedPublicId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
   const [editingTitle, setEditingTitle] = useState("");
   const [editingContent, setEditingContent] = useState("");
   const [editingMediaUrl, setEditingMediaUrl] = useState("");
+  const [editingAttachmentFile, setEditingAttachmentFile] = useState(null);
+
+  const [createAttachmentName, setCreateAttachmentName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const { data, mutate, isLoading, error } = useSWR(
     canRead ? ["dashboard-posts-list"] : null,
@@ -39,15 +52,11 @@ export function PostsManagementPage() {
   const filteredRows = useMemo(
     () =>
       rows.filter((row) =>
-        includesSearchQuery(row, searchQuery, [
-          "public_id",
-          "title",
-          "content",
-          "status",
-        ]),
+        includesSearchQuery(row, searchQuery, ["public_id", "title", "content", "is_published"]),
       ),
     [rows, searchQuery],
   );
+
   const selected = useMemo(
     () => rows.find((item) => item.public_id === selectedPublicId) || null,
     [rows, selectedPublicId],
@@ -66,26 +75,44 @@ export function PostsManagementPage() {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const payload = {
-      title: String(form.get("title") || "").trim(),
-      content: String(form.get("content") || "").trim(),
-      media_url: String(form.get("mediaUrl") || "").trim() || null,
-    };
-    if (!payload.title || !payload.content) {
+
+    const title = String(form.get("title") || "").trim();
+    const content = String(form.get("content") || "").trim();
+    const attachment = form.get("attachment");
+
+    if (!title || !content) {
       toast.error("Title and content are required.");
       return;
     }
+
+    setIsCreating(true);
     try {
-      const created = await createPost(payload);
+      let mediaUrl = null;
+      if (typeof File !== "undefined" && attachment instanceof File && attachment.size > 0) {
+        const uploaded = await uploadPostMedia(attachment);
+        mediaUrl = uploaded.media_url;
+      }
+
+      const created = await createPost({
+        title,
+        content,
+        media_url: mediaUrl,
+      });
+
       toast.success(`Post created: ${created.public_id}`);
       formElement?.reset?.();
+      setCreateAttachmentName("");
       await mutate();
+
       setSelectedPublicId(created.public_id);
-      setEditingTitle(created.title);
-      setEditingContent(created.content);
+      setEditingTitle(created.title || "");
+      setEditingContent(created.content || "");
       setEditingMediaUrl(created.media_url || "");
+      setEditingAttachmentFile(null);
     } catch (submitError) {
       toast.error(extractApiErrorMessage(submitError, "Failed to create post"));
+    } finally {
+      setIsCreating(false);
     }
   }
 
@@ -94,16 +121,30 @@ export function PostsManagementPage() {
       toast.error("Select a post first.");
       return;
     }
+
+    setIsSaving(true);
     try {
-      await updatePost(selectedPublicId, {
+      let nextMediaUrl = editingMediaUrl.trim() || null;
+      if (typeof File !== "undefined" && editingAttachmentFile instanceof File && editingAttachmentFile.size > 0) {
+        const uploaded = await uploadPostMedia(editingAttachmentFile);
+        nextMediaUrl = uploaded.media_url;
+      }
+
+      const updated = await updatePost(selectedPublicId, {
         title: editingTitle.trim(),
         content: editingContent.trim(),
-        media_url: editingMediaUrl.trim() || null,
+        media_url: nextMediaUrl,
       });
+
       toast.success("Post updated");
       await mutate();
+
+      setEditingMediaUrl(updated.media_url || "");
+      setEditingAttachmentFile(null);
     } catch (updateError) {
       toast.error(extractApiErrorMessage(updateError, "Failed to update post"));
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -112,12 +153,16 @@ export function PostsManagementPage() {
       toast.error("Select a post first.");
       return;
     }
+
+    setIsPublishing(true);
     try {
       await publishPost(selectedPublicId, target);
       toast.success(target ? "Post published" : "Post unpublished");
       await mutate();
     } catch (publishError) {
       toast.error(extractApiErrorMessage(publishError, "Failed to change publish state"));
+    } finally {
+      setIsPublishing(false);
     }
   }
 
@@ -127,7 +172,9 @@ export function PostsManagementPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <Chip color="warning" variant="flat">Landing</Chip>
+              <Chip color="warning" variant="flat">
+                Landing
+              </Chip>
               <Chip variant="flat">Public posts management</Chip>
             </div>
             <h2 className="cb-feature-title mt-3 text-4xl">Posts</h2>
@@ -169,6 +216,7 @@ export function PostsManagementPage() {
                       setEditingTitle(row.title || "");
                       setEditingContent(row.content || "");
                       setEditingMediaUrl(row.media_url || "");
+                      setEditingAttachmentFile(null);
                     }}
                     className={[
                       "w-full rounded-xl border p-3 text-left transition",
@@ -184,7 +232,15 @@ export function PostsManagementPage() {
                       </Chip>
                     </div>
                     <p className="mt-1 line-clamp-2 text-xs text-white/70">{row.content}</p>
-                    <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/45">
+                    {row.media_url ? (
+                      <img
+                        src={row.media_url}
+                        alt={`${row.title} attachment`}
+                        className="mt-2 h-24 w-full rounded-lg border border-white/10 object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                    <p className="mt-2 text-[11px] uppercase tracking-[0.16em] text-white/45">
                       {row.public_id} · {dayjs(row.updated_at).format("YYYY-MM-DD HH:mm")}
                     </p>
                   </button>
@@ -197,6 +253,7 @@ export function PostsManagementPage() {
               ) : null}
             </Card>
           ) : null}
+
           {error ? (
             <Card className="border border-rose-300/25 bg-rose-300/10 p-3">
               <p className="text-sm text-rose-100">
@@ -209,94 +266,152 @@ export function PostsManagementPage() {
         <section className="space-y-4">
           {canWrite ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <FormSectionDisclosure
-  title={<><span className="inline-flex items-center gap-2">
-                      <Plus size={14} />
-                      Create Post
-                    </span></>}
->
-<form className="space-y-3" onSubmit={handleCreate}>
-                <FormInput
-                  name="title"
-                  placeholder="Post title"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormTextarea
-                  name="content"
-                  rows={4}
-                  placeholder="Post content"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <FormInput
-                  name="mediaUrl"
-                  placeholder="Media URL (optional)"
-                  className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                />
-                <Button type="submit" color="warning" startContent={<Plus size={14} />}>
-                  Create
-                </Button>
-                    </form>
-</FormSectionDisclosure>
+              <FormSectionDisclosure title="Create Post">
+                <form className="space-y-3" onSubmit={handleCreate}>
+                  <FormInput
+                    name="title"
+                    placeholder="Post title"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormTextarea
+                    name="content"
+                    rows={4}
+                    placeholder="Post content"
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  <FormInput
+                    name="attachment"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    label="Attachment"
+                    description="Upload image/gif attachment. It will be pushed to CDN via backend."
+                    onChange={(event) => setCreateAttachmentName(event?.target?.files?.[0]?.name || "")}
+                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                  />
+                  {createAttachmentName ? (
+                    <p className="text-xs text-emerald-300">Selected: {createAttachmentName}</p>
+                  ) : null}
+                  <Button type="submit" color="warning" isDisabled={isCreating} isPending={isCreating}>
+                    {({ isPending }) => (
+                      <>
+                        {isPending ? <Spinner color="current" size="sm" /> : <Plus size={14} />}
+                        {isPending ? "Creating..." : "Create"}
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </FormSectionDisclosure>
             </Card>
           ) : null}
 
           {selected ? (
             <Card className="border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
-              <FormSectionDisclosure
-  title={<><span className="inline-flex items-center gap-2">
-                      <PencilLine size={14} />
-                      Edit {selected.public_id}
-                    </span></>}
->
-<div className="mb-3 flex items-center justify-between gap-2">
-                      <p className="cb-title text-xl">Edit {selected.public_id}</p>
-                <Chip variant="flat" color={selected.is_published ? "success" : "warning"}>
-                  {selected.is_published ? "published" : "draft"}
-                </Chip>
-              </div>
-              {canWrite ? (
-                <div className="space-y-3">
-                  <FormInput
-                    value={editingTitle}
-                    onChange={(event) => setEditingTitle(event.target.value)}
-                    placeholder="Title"
-                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                  />
-                  <FormTextarea
-                    rows={5}
-                    value={editingContent}
-                    onChange={(event) => setEditingContent(event.target.value)}
-                    placeholder="Content"
-                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                  />
-                  <FormInput
-                    value={editingMediaUrl}
-                    onChange={(event) => setEditingMediaUrl(event.target.value)}
-                    placeholder="Media URL"
-                    className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                  />
-                  <Button color="warning" variant="flat" startContent={<PencilLine size={14} />} onPress={handleSaveEdits}>
-                    Save
-                  </Button>
+              <FormSectionDisclosure title={`Edit ${selected.public_id}`}>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="cb-title text-xl">Edit {selected.public_id}</p>
+                  <Chip variant="flat" color={selected.is_published ? "success" : "warning"}>
+                    {selected.is_published ? "published" : "draft"}
+                  </Chip>
                 </div>
-              ) : null}
 
-              {canPublish ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    color="success"
-                    variant="flat"
-                    startContent={<Check size={14} />}
-                    onPress={() => handlePublishToggle(true)}
-                  >
-                    Publish
-                  </Button>
-                  <Button variant="ghost" onPress={() => handlePublishToggle(false)}>
-                    Unpublish
-                  </Button>
-                </div>
-              ) : null}
-</FormSectionDisclosure>
+                {canWrite ? (
+                  <div className="space-y-3">
+                    <FormInput
+                      value={editingTitle}
+                      onChange={(event) => setEditingTitle(event.target.value)}
+                      placeholder="Title"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+                    <FormTextarea
+                      rows={5}
+                      value={editingContent}
+                      onChange={(event) => setEditingContent(event.target.value)}
+                      placeholder="Content"
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+
+                    {editingMediaUrl ? (
+                      <img
+                        src={editingMediaUrl}
+                        alt={`${selected.title} attachment`}
+                        className="h-44 w-full rounded-xl border border-white/15 object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+
+                    <FormInput
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      label="Replace Attachment"
+                      description="Uploading a new file replaces current attachment."
+                      onChange={(event) =>
+                        setEditingAttachmentFile(event?.target?.files?.[0] || null)
+                      }
+                      className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+                    />
+
+                    {editingAttachmentFile ? (
+                      <p className="text-xs text-emerald-300">Selected: {editingAttachmentFile.name}</p>
+                    ) : null}
+
+                    {editingMediaUrl ? (
+                      <Button
+                        variant="ghost"
+                        color="danger"
+                        startContent={<Trash2 size={14} />}
+                        onPress={() => {
+                          setEditingMediaUrl("");
+                          setEditingAttachmentFile(null);
+                        }}
+                      >
+                        Remove Attachment
+                      </Button>
+                    ) : null}
+
+                    <Button color="warning" variant="flat" isDisabled={isSaving} isPending={isSaving} onPress={handleSaveEdits}>
+                      {({ isPending }) => (
+                        <>
+                          {isPending ? <Spinner color="current" size="sm" /> : <PencilLine size={14} />}
+                          {isPending ? "Saving..." : "Save"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : null}
+
+                {canPublish ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      color="success"
+                      variant="flat"
+                      startContent={<Check size={14} />}
+                      isDisabled={isPublishing}
+                      isPending={isPublishing}
+                      onPress={() => handlePublishToggle(true)}
+                    >
+                      {({ isPending }) => (
+                        <>
+                          {isPending ? <Spinner color="current" size="sm" /> : <ImagePlus size={14} />}
+                          Publish
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      isDisabled={isPublishing}
+                      isPending={isPublishing}
+                      onPress={() => handlePublishToggle(false)}
+                    >
+                      {({ isPending }) => (
+                        <>
+                          {isPending ? <Spinner color="current" size="sm" /> : null}
+                          Unpublish
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : null}
+              </FormSectionDisclosure>
             </Card>
           ) : null}
         </section>

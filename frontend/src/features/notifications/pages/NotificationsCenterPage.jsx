@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Separator } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   Bell,
@@ -255,9 +255,11 @@ export function NotificationsCenterPage() {
                 >
                   Read All
                 </Button>
+                <Separator orientation="vertical" className="h-4 bg-white/20" />
                 <Button variant="ghost" onPress={handleDeleteAll}>
                   Delete All
                 </Button>
+                <Separator orientation="vertical" className="h-4 bg-white/20" />
                 <Button
                   variant="ghost"
                   startContent={<RefreshCw size={15} />}

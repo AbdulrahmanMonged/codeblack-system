@@ -29,3 +29,12 @@ export async function publishPost(publicId, isPublished) {
     body: { is_published: Boolean(isPublished) },
   });
 }
+
+export async function uploadPostMedia(file) {
+  const body = new FormData();
+  body.append("media_file", file);
+  return apiRequest("/posts/media/upload", {
+    method: "POST",
+    body,
+  });
+}
