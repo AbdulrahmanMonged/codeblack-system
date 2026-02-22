@@ -1,5 +1,6 @@
 import { Button, Card, Chip } from "@heroui/react";
 import { FormInput, FormTextarea } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import dayjs from "dayjs";
 import { Check, PencilLine, Plus, RefreshCw } from "lucide-react";
@@ -12,6 +13,7 @@ import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasAnyPermissionSet, hasPermissionSet } from "../../../core/permissions/guards.js";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { toArray } from "../../../shared/utils/collections.js";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { createPost, listPosts, publishPost, updatePost } from "../api/posts-api.js";
 
 export function PostsManagementPage() {
@@ -23,6 +25,7 @@ export function PostsManagementPage() {
   const canAccess = hasAnyPermissionSet(["posts.read", "posts.write", "posts.publish"], permissions, isOwner);
 
   const [selectedPublicId, setSelectedPublicId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [editingTitle, setEditingTitle] = useState("");
   const [editingContent, setEditingContent] = useState("");
   const [editingMediaUrl, setEditingMediaUrl] = useState("");
@@ -33,6 +36,18 @@ export function PostsManagementPage() {
   );
 
   const rows = useMemo(() => toArray(data), [data]);
+  const filteredRows = useMemo(
+    () =>
+      rows.filter((row) =>
+        includesSearchQuery(row, searchQuery, [
+          "public_id",
+          "title",
+          "content",
+          "status",
+        ]),
+      ),
+    [rows, searchQuery],
+  );
   const selected = useMemo(
     () => rows.find((item) => item.public_id === selectedPublicId) || null,
     [rows, selectedPublicId],
@@ -129,12 +144,23 @@ export function PostsManagementPage() {
             <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
               <div className="mb-2 flex items-center justify-between px-2 py-1">
                 <p className="text-sm text-white/70">
-                  Posts: <span className="font-semibold text-white">{rows.length}</span>
+                  Posts: <span className="font-semibold text-white">{filteredRows.length}</span>
                 </p>
                 {isLoading ? <p className="text-xs text-white/55">Loading...</p> : null}
               </div>
+              <div className="mb-3">
+                <DashboardSearchField
+                  label="Search Posts"
+                  description="Search by post ID, title, content, and status."
+                  placeholder="Search posts..."
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  className="w-full"
+                  inputClassName="w-full"
+                />
+              </div>
               <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
-                {rows.map((row) => (
+                {filteredRows.map((row) => (
                   <button
                     key={row.public_id}
                     type="button"
@@ -164,6 +190,11 @@ export function PostsManagementPage() {
                   </button>
                 ))}
               </div>
+              {!isLoading && filteredRows.length === 0 ? (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                  No posts matched the current search query.
+                </div>
+              ) : null}
             </Card>
           ) : null}
           {error ? (

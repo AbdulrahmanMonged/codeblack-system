@@ -1,6 +1,6 @@
 import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
-import { Filter, RefreshCw, Search } from "lucide-react";
+import { Filter, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { useAppSelector } from "../../../app/store/hooks.js";
@@ -8,9 +8,11 @@ import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sess
 import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
 import { hasPermissionSet } from "../../../core/permissions/guards.js";
 import { FormInput } from "../../../shared/ui/FormControls.jsx";
+import { DashboardSearchField } from "../../../shared/ui/DashboardSearchField.jsx";
 import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
 import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
+import { includesSearchQuery } from "../../../shared/utils/search.js";
 import { getAuditTimeline } from "../api/admin-api.js";
 
 const EVENT_TYPES = [
@@ -55,6 +57,17 @@ export function AuditTimelinePage() {
       limit: 100,
       offset: 0,
     }),
+  );
+
+  const filteredTimelineItems = (Array.isArray(timeline?.items) ? timeline.items : []).filter((item) =>
+    includesSearchQuery(item, search, [
+      "event_type",
+      "action",
+      "entity_type",
+      "entity_id",
+      "actor_user_id",
+      "summary",
+    ]),
   );
 
   if (!canRead) {
@@ -103,12 +116,14 @@ export function AuditTimelinePage() {
 
       <FormSectionDisclosure title="Timeline Filters">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <FormInput
+          <DashboardSearchField
+            label="Search Audit Timeline"
+            description="Search by event type, action, entity ID, actor ID, or summary."
             value={search}
-            onChange={(event) => setSearch(String(event?.target?.value || ""))}
+            onChange={setSearch}
             placeholder="Search event type, entity, summary..."
-            startContent={<Search size={14} className="text-white/40" />}
             className="w-full"
+            inputClassName="w-full"
           />
           <FormInput
             value={actorUserId}
@@ -142,12 +157,12 @@ export function AuditTimelinePage() {
       <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
         <div className="mb-2 flex items-center justify-between px-2 py-1">
           <p className="text-sm text-white/70">
-            Timeline: <span className="font-semibold text-white">{timeline?.items?.length || 0}</span>
+            Timeline: <span className="font-semibold text-white">{filteredTimelineItems.length}</span>
           </p>
         </div>
         <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
           {timelineLoading ? <LoadingBlock label="Loading audit timeline..." /> : null}
-          {(timeline?.items || []).map((item, index) => (
+          {filteredTimelineItems.map((item, index) => (
             <div
               key={`${item.event_type}-${item.entity_id}-${index}`}
               className="rounded-xl border border-white/10 bg-white/5 p-3"
@@ -174,7 +189,7 @@ export function AuditTimelinePage() {
               </p>
             </div>
           ))}
-          {!timelineLoading && (timeline?.items || []).length === 0 ? (
+          {!timelineLoading && filteredTimelineItems.length === 0 ? (
             <EmptyBlock
               title="No audit events found"
               description="No events match your current filter configuration."
