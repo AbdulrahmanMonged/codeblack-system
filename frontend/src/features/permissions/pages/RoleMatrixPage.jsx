@@ -1,0 +1,736 @@
+import {
+  AlertDialog,
+  Button,
+  Card,
+  Chip,
+  EmptyState,
+  Header,
+  Label,
+  ListBox,
+  SearchField,
+  Separator,
+  Spinner,
+  useFilter,
+} from "@heroui/react";
+import { CheckCheck, RefreshCw, Save, ShieldAlert } from "lucide-react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
+import { toast } from "../../../shared/ui/toast.jsx";
+import { useAppSelector } from "../../../app/store/hooks.js";
+import { selectIsOwner, selectPermissions } from "../../../app/store/slices/sessionSlice.js";
+import { extractApiErrorMessage } from "../../../core/api/error-utils.js";
+import { hasPermissionSet } from "../../../core/permissions/guards.js";
+import { ForbiddenState } from "../../../shared/ui/ForbiddenState.jsx";
+import { ListPaginationBar } from "../../../shared/ui/ListPaginationBar.jsx";
+import { EmptyBlock, ErrorBlock, LoadingBlock } from "../../../shared/ui/StateBlocks.jsx";
+import { FormSectionDisclosure } from "../../../shared/ui/FormSectionDisclosure.jsx";
+import { toArray } from "../../../shared/utils/collections.js";
+import {
+  listPermissionCatalog,
+  listRoleMatrix,
+  updateRoleMatrix,
+} from "../api/permissions-api.js";
+
+const DEFAULT_PERMISSION_BUNDLE = [
+  "activities.create",
+  "activities.read",
+  "auth.logout",
+  "auth.me",
+  "notifications.delete_own",
+  "notifications.read",
+  "orders.read",
+  "orders.submit",
+  "playerbase.read",
+  "punishments.read",
+  "vacations.read",
+  "vacations.submit",
+  "verification_requests.create",
+  "verification_requests.read",
+  "verification_requests.read_own",
+];
+
+function normalizeSelectionToArray(selection, fallback = []) {
+  if (selection === "all") {
+    return [...new Set(fallback.map((item) => String(item).trim()).filter(Boolean))].sort();
+  }
+  if (selection instanceof Set) {
+    return [...new Set([...selection].map((item) => String(item).trim()).filter(Boolean))].sort();
+  }
+  if (Array.isArray(selection)) {
+    return [...new Set(selection.map((item) => String(item).trim()).filter(Boolean))].sort();
+  }
+  if (selection === null || selection === undefined) {
+    return [];
+  }
+  return [String(selection).trim()].filter(Boolean);
+}
+
+function sortUniquePermissions(values) {
+  return [...new Set((values || []).map((item) => String(item).trim()).filter(Boolean))].sort();
+}
+
+function permissionListsEqual(left, right) {
+  const leftSorted = sortUniquePermissions(left);
+  const rightSorted = sortUniquePermissions(right);
+  if (leftSorted.length !== rightSorted.length) {
+    return false;
+  }
+  return leftSorted.every((value, index) => value === rightSorted[index]);
+}
+
+function formatSectionLabel(sectionKey) {
+  if (!sectionKey) return "General";
+  return String(sectionKey)
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function groupPermissionKeys(permissionKeys) {
+  const grouped = new Map();
+
+  for (const permissionKey of permissionKeys || []) {
+    const normalized = String(permissionKey).trim();
+    if (!normalized) continue;
+
+    const [sectionKey] = normalized.split(".");
+    const bucketKey = (sectionKey || "general").toLowerCase();
+    if (!grouped.has(bucketKey)) {
+      grouped.set(bucketKey, []);
+    }
+    grouped.get(bucketKey).push(normalized);
+  }
+
+  return [...grouped.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([sectionKey, values]) => ({
+      key: sectionKey,
+      label: formatSectionLabel(sectionKey),
+      items: sortUniquePermissions(values),
+    }));
+}
+
+export function RoleMatrixPage() {
+  const permissions = useAppSelector(selectPermissions);
+  const isOwner = useAppSelector(selectIsOwner);
+  const { contains } = useFilter({ sensitivity: "base" });
+
+  const canRead = hasPermissionSet(["discord_role_permissions.read"], permissions, isOwner);
+  const canWrite = hasPermissionSet(["discord_role_permissions.write"], permissions, isOwner);
+
+  const [selectedRoleId, setSelectedRoleId] = useState("");
+  const [draftPermissions, setDraftPermissions] = useState([]);
+  const [pendingRoleSwitch, setPendingRoleSwitch] = useState(null);
+  const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [permissionSearch, setPermissionSearch] = useState("");
+  const [isSyncingRoles, setIsSyncingRoles] = useState(false);
+  const didInitialSyncRef = useRef(false);
+
+  const {
+    data: roleMatrix,
+    error: roleMatrixError,
+    isLoading: roleMatrixLoading,
+    mutate: refreshRoleMatrix,
+  } = useSWR(
+    canRead ? ["permissions-role-matrix", page, pageSize] : null,
+    () =>
+      listRoleMatrix({
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
+      }),
+    {
+      revalidateOnFocus: false,
+    },
+  );
+
+  const {
+    data: permissionCatalog,
+    error: permissionCatalogError,
+    isLoading: permissionCatalogLoading,
+    mutate: refreshPermissionCatalog,
+  } = useSWR(
+    canRead ? ["permissions-catalog"] : null,
+    () => listPermissionCatalog(),
+    {
+      revalidateOnFocus: false,
+    },
+  );
+
+  const roleRows = useMemo(() => toArray(roleMatrix), [roleMatrix]);
+  const pageRoleRows = useMemo(() => roleRows.slice(0, pageSize), [roleRows, pageSize]);
+  const hasNextPage = roleRows.length > pageSize;
+
+  useEffect(() => {
+    if (!canRead || didInitialSyncRef.current) {
+      return;
+    }
+    didInitialSyncRef.current = true;
+
+    (async () => {
+      setIsSyncingRoles(true);
+      try {
+        const syncedRows = await listRoleMatrix({
+          limit: pageSize + 1,
+          offset: (page - 1) * pageSize,
+          syncRoles: true,
+        });
+        await refreshRoleMatrix(syncedRows, { revalidate: false });
+      } catch {
+        // keep cached response path if sync fails
+      } finally {
+        setIsSyncingRoles(false);
+      }
+    })();
+  }, [canRead, page, pageSize, refreshRoleMatrix]);
+
+  useEffect(() => {
+    if (!roleRows.length) {
+      if (selectedRoleId) {
+        setSelectedRoleId("");
+      }
+      if (draftPermissions.length) {
+        setDraftPermissions([]);
+      }
+      return;
+    }
+
+    const hasSelected = roleRows.some(
+      (role) => String(role.discord_role_id) === String(selectedRoleId),
+    );
+    if (hasSelected) {
+      return;
+    }
+
+    const firstRole = roleRows[0];
+    setSelectedRoleId(String(firstRole.discord_role_id));
+    setDraftPermissions(sortUniquePermissions(firstRole.assigned_permissions || []));
+  }, [roleRows, selectedRoleId, draftPermissions.length]);
+
+  const selectedRole = useMemo(
+    () => roleRows.find((role) => String(role.discord_role_id) === String(selectedRoleId)) || null,
+    [roleRows, selectedRoleId],
+  );
+
+  const selectedAssignedPermissions = useMemo(
+    () => sortUniquePermissions(selectedRole?.assigned_permissions || []),
+    [selectedRole?.assigned_permissions],
+  );
+
+  const isDraftDirty = useMemo(
+    () => !permissionListsEqual(draftPermissions, selectedAssignedPermissions),
+    [draftPermissions, selectedAssignedPermissions],
+  );
+
+  const allPermissionKeys = useMemo(
+    () => sortUniquePermissions(permissionCatalog || []),
+    [permissionCatalog],
+  );
+
+  const groupedPermissions = useMemo(() => groupPermissionKeys(allPermissionKeys), [allPermissionKeys]);
+  const filteredGroupedPermissions = useMemo(() => {
+    const query = String(permissionSearch || "").trim();
+    if (!query) {
+      return groupedPermissions;
+    }
+
+    return groupedPermissions
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((permissionKey) => contains(permissionKey, query)),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [groupedPermissions, permissionSearch, contains]);
+
+  if (!canRead) {
+    return (
+      <ForbiddenState
+        title="Role Matrix Access Restricted"
+        description="You need discord_role_permissions.read permission to access role matrix."
+      />
+    );
+  }
+
+  function ensureDraftInitialized(role) {
+    const assigned = sortUniquePermissions(role?.assigned_permissions || []);
+    setDraftPermissions(assigned);
+  }
+
+  function selectRole(role) {
+    setSelectedRoleId(String(role.discord_role_id));
+    ensureDraftInitialized(role);
+    setPendingRoleSwitch(null);
+  }
+
+  function attemptRoleSwitch(role) {
+    if (!selectedRole || String(role.discord_role_id) === String(selectedRole.discord_role_id)) {
+      selectRole(role);
+      return;
+    }
+
+    if (isDraftDirty) {
+      setPendingRoleSwitch(role);
+      setIsUnsavedDialogOpen(true);
+      return;
+    }
+
+    selectRole(role);
+  }
+
+  function handlePermissionSelectionChange(selectionKeys) {
+    const nextPermissions = normalizeSelectionToArray(selectionKeys, allPermissionKeys);
+    setDraftPermissions(sortUniquePermissions(nextPermissions));
+  }
+
+  function handlePermissionSearchChange(value) {
+    const nextValue = typeof value === "string" ? value : String(value?.target?.value || "");
+    setPermissionSearch(nextValue);
+  }
+
+  function handleSelectSectionPermissions(sectionLabel, sectionItems) {
+    if (!canWrite) {
+      return;
+    }
+
+    setDraftPermissions((previous) => {
+      const next = sortUniquePermissions([...previous, ...sectionItems]);
+      const addedCount = Math.max(0, next.length - previous.length);
+      if (addedCount > 0) {
+        toast.success(`Selected ${addedCount} permission(s) from ${sectionLabel}`);
+      } else {
+        toast.info(`${sectionLabel} is already fully selected`);
+      }
+      return next;
+    });
+  }
+
+  function handleClearSectionPermissions(sectionLabel, sectionItems) {
+    if (!canWrite) {
+      return;
+    }
+
+    const sectionSet = new Set(sectionItems.map((item) => String(item).trim()).filter(Boolean));
+    setDraftPermissions((previous) => {
+      const next = sortUniquePermissions(
+        previous.filter((permissionKey) => !sectionSet.has(permissionKey)),
+      );
+      const removedCount = Math.max(0, previous.length - next.length);
+      if (removedCount > 0) {
+        toast.success(`Cleared ${removedCount} permission(s) from ${sectionLabel}`);
+      } else {
+        toast.info(`${sectionLabel} had no selected permissions to clear`);
+      }
+      return next;
+    });
+  }
+
+  function handleSelectAllPermissions() {
+    if (!canWrite || !isOwner) {
+      return;
+    }
+    setDraftPermissions(sortUniquePermissions(allPermissionKeys));
+  }
+
+  function handleClearAllPermissions() {
+    if (!canWrite || !isOwner) {
+      return;
+    }
+    setDraftPermissions([]);
+  }
+
+  function handleSelectDefaultPermissions() {
+    if (!canWrite) {
+      return;
+    }
+
+    const catalogSet = new Set(allPermissionKeys);
+    const validDefaults = DEFAULT_PERMISSION_BUNDLE.filter((key) => catalogSet.has(key));
+    const missing = DEFAULT_PERMISSION_BUNDLE.filter((key) => !catalogSet.has(key));
+    setDraftPermissions(sortUniquePermissions(validDefaults));
+
+    toast.success(`Default permission bundle applied (${validDefaults.length})`);
+    if (missing.length) {
+      toast.warning(`${missing.length} default key(s) are not in current permission catalog`);
+    }
+  }
+
+  async function handleSavePermissions() {
+    if (!selectedRole) {
+      toast.error("Select a role first");
+      return;
+    }
+    try {
+      const nextPermissions = sortUniquePermissions(draftPermissions);
+      const row = await updateRoleMatrix(selectedRole.discord_role_id, {
+        permission_keys: nextPermissions,
+      });
+      setDraftPermissions(nextPermissions);
+      toast.success("Role permissions updated");
+      await refreshRoleMatrix((previous) => {
+        const existingRows = toArray(previous);
+        return existingRows.map((role) =>
+          String(role.discord_role_id) === String(row.discord_role_id)
+            ? { ...role, assigned_permissions: toArray(row.assigned_permissions) }
+            : role,
+        );
+      }, { revalidate: false });
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, "Failed to update role permissions"));
+    }
+  }
+
+  async function handleSyncRoles() {
+    setIsSyncingRoles(true);
+    try {
+      const syncedRows = await listRoleMatrix({
+        limit: pageSize + 1,
+        offset: (page - 1) * pageSize,
+        syncRoles: true,
+      });
+      await refreshRoleMatrix(syncedRows, { revalidate: false });
+      toast.success("Discord role cache synced");
+    } catch (error) {
+      toast.error(extractApiErrorMessage(error, "Failed to sync roles from Discord"));
+    } finally {
+      setIsSyncingRoles(false);
+    }
+  }
+
+  function handleUnsavedDialogOpenChange(isOpen) {
+    setIsUnsavedDialogOpen(isOpen);
+    if (!isOpen) {
+      setPendingRoleSwitch(null);
+    }
+  }
+
+  function keepEditingCurrentRole() {
+    setIsUnsavedDialogOpen(false);
+    setPendingRoleSwitch(null);
+  }
+
+  function discardChangesAndSwitchRole() {
+    if (pendingRoleSwitch) {
+      selectRole(pendingRoleSwitch);
+    }
+    setIsUnsavedDialogOpen(false);
+  }
+
+  return (
+    <>
+      <div className="mx-auto w-full max-w-7xl space-y-5">
+        <Card className="border border-white/15 bg-black/55 px-6 py-5 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip color="warning" variant="flat">
+                  Permission Governance
+                </Chip>
+                <Chip variant="flat">Discord roles</Chip>
+              </div>
+              <h2 className="cb-feature-title mt-3 text-4xl">Role Matrix</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                startContent={<RefreshCw size={15} />}
+                isDisabled={roleMatrixLoading || isSyncingRoles}
+                onPress={() => refreshRoleMatrix()}
+              >
+                Refresh
+              </Button>
+              <Separator orientation="vertical" className="h-6" />
+              <Button
+                variant="flat"
+                color="warning"
+                isDisabled={isSyncingRoles}
+                isPending={isSyncingRoles}
+                onPress={handleSyncRoles}
+              >
+                {({ isPending }) => (
+                  <>
+                    {isPending ? <Spinner color="current" size="sm" /> : <RefreshCw size={15} />}
+                    Sync Roles
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid gap-5 xl:grid-cols-[1.05fr_1.35fr]">
+          <section className="space-y-4">
+            <Card className="border border-white/15 bg-black/45 p-2 shadow-2xl backdrop-blur-xl">
+              <div className="mb-2 flex items-center justify-between px-2 py-1">
+                <p className="text-sm text-white/70">
+                  Roles: <span className="font-semibold text-white">{pageRoleRows.length}</span>
+                </p>
+              </div>
+              <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
+                {roleMatrixLoading ? <LoadingBlock label="Loading roles..." /> : null}
+                {pageRoleRows.map((role) => {
+                  const active = String(role.discord_role_id) === String(selectedRoleId);
+                  return (
+                    <button
+                      key={role.discord_role_id}
+                      type="button"
+                      onClick={() => attemptRoleSwitch(role)}
+                      className={[
+                        "w-full rounded-xl border p-3 text-left transition",
+                        active
+                          ? "border-amber-300/45 bg-amber-300/15"
+                          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10",
+                      ].join(" ")}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-white">{role.name}</p>
+                        <Chip size="sm" variant="flat">
+                          {role.assigned_permissions.length}
+                        </Chip>
+                      </div>
+                      <p className="mt-1 text-xs text-white/65">
+                        Role ID {role.discord_role_id} · Position {role.position} ·{" "}
+                        {role.is_active ? "active" : "inactive"}
+                      </p>
+                    </button>
+                  );
+                })}
+                {!roleMatrixLoading && pageRoleRows.length === 0 ? (
+                  <EmptyBlock
+                    title="No roles found"
+                    description="No Discord roles are currently available in the cache."
+                  />
+                ) : null}
+              </div>
+              <div className="mt-3">
+                <ListPaginationBar
+                  page={page}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={(nextPageSize) => {
+                    setPageSize(nextPageSize);
+                    setPage(1);
+                  }}
+                  hasNextPage={hasNextPage}
+                  isLoading={roleMatrixLoading}
+                  visibleCount={pageRoleRows.length}
+                />
+              </div>
+            </Card>
+
+            {roleMatrixError ? (
+              <ErrorBlock
+                title="Failed to load role matrix"
+                description={extractApiErrorMessage(roleMatrixError)}
+                onRetry={() => refreshRoleMatrix()}
+              />
+            ) : null}
+          </section>
+
+          <section className="space-y-4">
+            {selectedRole ? (
+              <FormSectionDisclosure title="Role Permission Editor">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="cb-title text-2xl">{selectedRole.name}</p>
+                    <p className="text-xs text-white/60">Role ID {selectedRole.discord_role_id}</p>
+                  </div>
+                  <Chip variant="flat">Draft: {draftPermissions.length} permissions</Chip>
+                </div>
+
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    isDisabled={!canWrite || !allPermissionKeys.length}
+                    onPress={handleSelectDefaultPermissions}
+                  >
+                    Select Default Permissions
+                  </Button>
+
+                  {isOwner ? (
+                    <>
+                      <Separator orientation="vertical" className="h-6" />
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        isDisabled={!canWrite || !allPermissionKeys.length}
+                        onPress={handleSelectAllPermissions}
+                      >
+                        Select All Permissions
+                      </Button>
+                      <Separator orientation="vertical" className="h-6 bg-white/20" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        isDisabled={!canWrite || !draftPermissions.length}
+                        onPress={handleClearAllPermissions}
+                      >
+                        Clear All Permissions
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-black/35 p-3">
+                  {groupedPermissions.length ? (
+                    <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/60">
+                        Section quick actions
+                      </p>
+                      <div className="mt-2 grid gap-2 md:grid-cols-2">
+                        {groupedPermissions.map((section) => (
+                          <div
+                            key={`quick-${section.key}`}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/25 px-2 py-2"
+                          >
+                            <span className="text-xs font-medium text-white/85">{section.label}</span>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                isDisabled={!canWrite}
+                                onPress={() => handleSelectSectionPermissions(section.label, section.items)}
+                              >
+                                Select Section
+                              </Button>
+                              <Separator orientation="vertical" className="h-5 bg-white/20" />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                isDisabled={!canWrite}
+                                onPress={() => handleClearSectionPermissions(section.label, section.items)}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <SearchField
+                    name="permission-search"
+                    value={permissionSearch}
+                    onChange={handlePermissionSearchChange}
+                    variant="secondary"
+                  >
+                    <Label>Search permissions</Label>
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Search permissions..." />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+
+                  <div className="mt-3 max-h-[28rem] overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-2">
+                    <ListBox
+                      selectionMode="multiple"
+                      selectedKeys={new Set(draftPermissions)}
+                      onSelectionChange={handlePermissionSelectionChange}
+                      renderEmptyState={() => <EmptyState>No permissions found</EmptyState>}
+                    >
+                      {filteredGroupedPermissions.map((section, sectionIndex) => (
+                        <Fragment key={section.key}>
+                          <ListBox.Section>
+                            <Header>{section.label}</Header>
+                            {section.items.map((permissionKey) => (
+                              <ListBox.Item key={permissionKey} id={permissionKey} textValue={permissionKey}>
+                                {permissionKey}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox.Section>
+                          {sectionIndex < filteredGroupedPermissions.length - 1 ? <Separator /> : null}
+                        </Fragment>
+                      ))}
+                    </ListBox>
+                  </div>
+
+                  {!permissionCatalogLoading && allPermissionKeys.length === 0 ? (
+                    <div className="mt-3">
+                      <EmptyBlock
+                        title="No permissions available"
+                        description="Permission catalog is empty. Seed permissions first."
+                      />
+                    </div>
+                  ) : null}
+                </div>
+
+                {canWrite ? (
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <Button color="warning" startContent={<Save size={14} />} onPress={handleSavePermissions}>
+                      Save Role Permissions
+                    </Button>
+                    <Separator orientation="vertical" className="h-6" />
+                    <Button
+                      variant="ghost"
+                      startContent={<CheckCheck size={14} />}
+                      onPress={() => ensureDraftInitialized(selectedRole)}
+                    >
+                      Reset Draft
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/75">
+                    <ShieldAlert size={15} className="mt-0.5 text-amber-200" />
+                    <p>Read-only mode. You need discord_role_permissions.write to modify this matrix.</p>
+                  </div>
+                )}
+
+                {permissionCatalogError ? (
+                  <div className="mt-3 rounded-xl border border-rose-300/25 bg-rose-300/10 p-3 text-sm text-rose-100">
+                    {extractApiErrorMessage(permissionCatalogError, "Failed to load permission catalog")}
+                    <div className="mt-2">
+                      <Button size="sm" variant="ghost" onPress={() => refreshPermissionCatalog()}>
+                        Retry catalog
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </FormSectionDisclosure>
+            ) : (
+              <EmptyBlock
+                title="Select a role"
+                description="Choose a role from the left list to review and edit permission bundles."
+              />
+            )}
+          </section>
+        </div>
+      </div>
+
+      <AlertDialog isOpen={isUnsavedDialogOpen} onOpenChange={handleUnsavedDialogOpenChange}>
+        <AlertDialog.Trigger>
+          <span className="hidden" />
+        </AlertDialog.Trigger>
+        <AlertDialog.Backdrop>
+          <AlertDialog.Container>
+            <AlertDialog.Dialog className="sm:max-w-[420px]">
+              <AlertDialog.CloseTrigger />
+              <AlertDialog.Header>
+                <AlertDialog.Icon status="warning" />
+                <AlertDialog.Heading>Discard unsaved changes?</AlertDialog.Heading>
+              </AlertDialog.Header>
+              <AlertDialog.Body>
+                <p>
+                  You changed permission selections for the current role and did not save yet. If you
+                  switch now, those changes will be lost.
+                </p>
+              </AlertDialog.Body>
+              <AlertDialog.Footer>
+                <Button slot="close" variant="tertiary" onPress={keepEditingCurrentRole}>
+                  Keep Editing
+                </Button>
+                <Button slot="close" variant="primary" onPress={discardChangesAndSwitchRole}>
+                  Discard and Switch
+                </Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Dialog>
+          </AlertDialog.Container>
+        </AlertDialog.Backdrop>
+      </AlertDialog>
+    </>
+  );
+}

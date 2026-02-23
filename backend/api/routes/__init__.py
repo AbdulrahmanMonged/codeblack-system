@@ -1,0 +1,48 @@
+"""API route modules."""
+
+from backend.api.routes import (
+    admin,
+    applications,
+    activities,
+    auth,
+    blacklist,
+    bot_control,
+    config_registry,
+    discord,
+    notifications,
+    orders,
+    playerbase,
+    permissions,
+    posts,
+    public,
+    roster,
+    system,
+    user_accounts,
+    verification_requests,
+    vacations,
+    voting,
+)
+
+__all__ = [
+    "admin",
+    "applications",
+    "activities",
+    "auth",
+    "blacklist",
+    "bot_control",
+    "config_registry",
+    "discord",
+    "notifications",
+    "orders",
+    "posts",
+    "public",
+    "playerbase",
+    "permissions",
+    "roster",
+    "system",
+    "user_accounts",
+    "verification_requests",
+    "vacations",
+    "voting",
+]
+

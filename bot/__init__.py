@@ -1,0 +1,142 @@
+"""
+CodeBlack Discord Bot - Factory module.
+
+Initializes the bot with all infrastructure:
+- Redis (caching + IPC)
+- Database (SQLAlchemy 2.0 + async sessions)
+- Cloudflare session manager + HTTP client
+- Service layer (player, event, activity, forum, scraper)
+- IPC manager (Redis Streams + Pub/Sub for FastAPI)
+"""
+
+import asyncio
+import logging
+from typing import TYPE_CHECKING
+
+from .logger import CustomFormatter
+
+logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    import discord
+
+
+def create_bot() -> "discord.Bot":
+    """Create and configure the Discord bot instance."""
+    import discord
+
+    # Import runtime-heavy modules lazily so importing `bot` for tooling
+    # (e.g. Alembic env) doesn't require optional runtime dependencies.
+    from .cloudflare.http_client import HttpClient
+    from .cloudflare.session_manager import SessionManager
+    from .config import get_settings
+    from .core.database import DatabaseManager
+    from .core.ipc import IPCManager
+    from .core.ipc_command_handler import IPCCommandHandler
+    from .core.redis import RedisManager
+    from .services.activity_service import ActivityService
+    from .services.event_service import EventService
+    from .services.forum_service import ForumService
+    from .services.player_service import PlayerService
+    from .services.scraper_service import ScraperService
+
+    intents = discord.Intents.default()
+    intents.message_content = True
+    intents.members = True
+
+    bot = discord.Bot(
+        help_command=None,
+        intents=intents,
+        activity=discord.Activity(
+            type=discord.ActivityType.watching, name="Codeblack Agent"
+        ),
+    )
+
+    bot.redis = None
+    bot.ipc = None
+    bot.session_manager = None
+    bot.http_client = None
+    bot.forum_service = None
+    bot.scraper_service = None
+    bot.player_service = None
+    bot.activity_service = None
+    bot.event_service = None
+    bot.ipc_command_handler = None
+    bot.ipc_command_task = None
+    bot.runtime_initialized = False
+    bot.runtime_init_lock = asyncio.Lock()
+
+    async def initialize_runtime() -> None:
+        if bot.runtime_initialized:
+            return
+        async with bot.runtime_init_lock:
+            if bot.runtime_initialized:
+                return
+
+            logger.info("Initializing runtime services")
+            settings = get_settings()
+
+            # Initialize Redis
+            await RedisManager.initialize()
+            logger.info("Redis initialized")
+
+            # Initialize Database
+            await DatabaseManager.initialize()
+            logger.info("Database initialized")
+
+            # Initialize Cloudflare session manager + HTTP client
+            session_mgr = SessionManager()
+            session_mgr.set_redis(RedisManager)
+            http_client = HttpClient(session_mgr)
+            if settings.CF_PROXY:
+                http_client.set_proxy(settings.CF_PROXY)
+                logger.info(
+                    "HTTP client proxy configured for Cloudflare-protected requests"
+                )
+
+            # Initialize IPC manager
+            ipc = IPCManager()
+            await ipc.initialize()
+            logger.info("IPC streams initialized")
+
+            # Attach infrastructure to bot for cog access
+            bot.redis = RedisManager
+            bot.ipc = ipc
+            bot.session_manager = session_mgr
+            bot.http_client = http_client
+
+            if bot.ipc_command_task is None or bot.ipc_command_task.done():
+                bot.ipc_command_handler = IPCCommandHandler(ipc, bot)
+                bot.ipc_command_task = asyncio.create_task(bot.ipc_command_handler.run())
+                logger.info("IPC command listener started")
+
+            # Initialize services
+            bot.forum_service = ForumService(http_client, RedisManager)
+            bot.scraper_service = ScraperService(http_client)
+            bot.player_service = PlayerService()
+            bot.activity_service = ActivityService(ipc)
+            bot.event_service = EventService(ipc)
+
+            bot.runtime_initialized = True
+            logger.info("All services initialized")
+
+    async def _setup_hook() -> None:
+        await initialize_runtime()
+
+    bot.setup_hook = _setup_hook
+
+    @bot.event
+    async def on_connect():
+        logger.info("Connected to Discord")
+        await initialize_runtime()
+
+    return bot
+
+
+# Setup discord logger
+_discord_logger = logging.getLogger("discord")
+_discord_logger.setLevel(logging.DEBUG)
+_ch = logging.StreamHandler()
+_ch.setLevel(logging.DEBUG)
+_ch.setFormatter(CustomFormatter())
+_discord_logger.addHandler(_ch)

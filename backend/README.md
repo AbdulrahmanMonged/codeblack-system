@@ -1,0 +1,164 @@
+# CodeBlack Backend (Phase 0 + Phase 1 Baseline)
+
+This directory contains the FastAPI backend scaffold aligned with `BACKEND_PLAN.md`.
+
+## What Exists
+- App factory and ASGI entrypoint (`backend/app.py`, `backend/main.py`)
+- API v1 router baseline (`/api/v1`)
+- System health endpoint (`GET /api/v1/system/health`)
+- Deep health endpoint with DB/Redis/IPC/Celery checks (`GET /api/v1/system/health/deep`)
+- Prometheus-style metrics endpoint (`GET /api/v1/system/metrics`)
+- Bot/Celery status endpoint (`GET /api/v1/system/bot-status`)
+- Config registry endpoints (list/update/preview/rollback/history)
+- Critical config two-step approval flow (`/api/v1/config/changes/{change_id}/approve`)
+- Admin/reviewer portal endpoints:
+  - `GET /api/v1/admin/dashboard/summary`
+  - `GET /api/v1/admin/review-queue`
+  - `GET /api/v1/admin/audit/timeline`
+- Discord OAuth2 auth endpoints:
+  - `GET /api/v1/auth/discord/login`
+  - `GET /api/v1/auth/discord/callback` (sets HttpOnly session cookie)
+  - `GET /api/v1/auth/me`
+  - `POST /api/v1/auth/logout`
+- Discord role sync endpoints:
+  - `GET /api/v1/discord/roles`
+  - `POST /api/v1/discord/roles/sync`
+- Role-permission matrix endpoints:
+  - `GET /api/v1/permissions/role-matrix`
+  - `PUT /api/v1/permissions/role-matrix/{discord_role_id}`
+- Bot control center endpoints:
+  - `GET /api/v1/bot/channels`
+  - `PUT /api/v1/bot/channels`
+  - `GET /api/v1/bot/features`
+  - `PUT /api/v1/bot/features`
+  - `POST /api/v1/bot/triggers/forum-sync`
+  - `POST /api/v1/bot/triggers/cop-scores-refresh`
+  - `GET /api/v1/bot/dead-letter`
+  - `POST /api/v1/bot/dead-letter/{dead_letter_id}/replay`
+- Applications endpoints:
+  - `POST /api/v1/applications` (multipart/form-data with image uploads)
+  - `GET /api/v1/applications/eligibility`
+  - `GET /api/v1/applications`
+  - `GET /api/v1/applications/{public_id}`
+  - `POST /api/v1/applications/{public_id}/decision`
+  - `GET /api/v1/applications/policies`
+  - `PUT /api/v1/applications/policies`
+- Orders endpoints:
+  - `POST /api/v1/orders` (multipart/form-data with proof image)
+  - `GET /api/v1/orders`
+  - `GET /api/v1/orders/{public_id}`
+  - `POST /api/v1/orders/{public_id}/decision`
+  - `POST /api/v1/users/{user_id}/account-link`
+  - `GET /api/v1/users/{user_id}/account-link`
+- Roster/Playerbase endpoints:
+  - `GET /api/v1/roster`
+  - `POST /api/v1/roster`
+  - `PATCH /api/v1/roster/{membership_id}`
+  - `GET /api/v1/roster/ranks`
+  - `POST /api/v1/roster/ranks`
+  - `POST /api/v1/playerbase`
+  - `GET /api/v1/playerbase`
+  - `GET /api/v1/playerbase/{player_id}`
+  - `POST /api/v1/playerbase/{player_id}/punishments`
+  - `GET /api/v1/playerbase/{player_id}/punishments`
+  - `PATCH /api/v1/playerbase/{player_id}/punishments/{punishment_id}`
+- Blacklist endpoints:
+  - `POST /api/v1/blacklist`
+  - `GET /api/v1/blacklist`
+  - `PATCH /api/v1/blacklist/{entry_id}`
+  - `POST /api/v1/blacklist/{entry_id}/remove`
+  - `POST /api/v1/blacklist/removal-requests` (public)
+  - `GET /api/v1/blacklist/removal-requests`
+  - `GET /api/v1/blacklist/removal-requests/{request_id}`
+  - `POST /api/v1/blacklist/removal-requests/{request_id}/approve`
+  - `POST /api/v1/blacklist/removal-requests/{request_id}/deny`
+- Activities endpoints:
+  - `POST /api/v1/activities`
+  - `GET /api/v1/activities`
+  - `GET /api/v1/activities/{public_id}`
+  - `POST /api/v1/activities/{public_id}/approve`
+  - `POST /api/v1/activities/{public_id}/reject`
+  - `POST /api/v1/activities/{public_id}/publish`
+  - `POST /api/v1/activities/{public_id}/participants`
+- Voting endpoints:
+  - `GET /api/v1/voting/{context_type}/{context_id}`
+  - `POST /api/v1/voting/{context_type}/{context_id}/vote`
+  - `GET /api/v1/voting/{context_type}/{context_id}/voters`
+  - `POST /api/v1/voting/{context_type}/{context_id}/close`
+  - `POST /api/v1/voting/{context_type}/{context_id}/reopen`
+  - `POST /api/v1/voting/{context_type}/{context_id}/reset`
+- Vacation endpoints:
+  - `POST /api/v1/vacations`
+  - `GET /api/v1/vacations`
+  - `GET /api/v1/vacations/policies`
+  - `GET /api/v1/vacations/{public_id}`
+  - `POST /api/v1/vacations/{public_id}/approve`
+  - `POST /api/v1/vacations/{public_id}/deny`
+  - `POST /api/v1/vacations/{public_id}/cancel`
+  - `POST /api/v1/vacations/{public_id}/returned`
+- Async SQLAlchemy setup and backend models:
+  - `config_registry`
+  - `config_change_history`
+  - `users`
+  - `discord_roles`
+  - `permissions`
+  - `discord_role_permissions`
+  - `user_discord_roles`
+  - `user_permissions`
+  - `user_sessions`
+- Domain-level config guardrails policy
+- Request ID middleware and standardized API error response
+- Structured access logs + correlation IDs + optional JSON log format
+- Runtime rate limiting and privileged-endpoint anomaly detection middleware
+- DB-backed audit trail for non-config mutation routes (`audit_events`)
+- Redis Streams IPC client from backend to bot command stream, with 5s ack timeout policy
+- IPC retry/backoff and dead-letter queue for failed/timeout command dispatches
+- Startup bootstrap seed for:
+  - permission catalog
+  - owner users (`BACKEND_OWNER_DISCORD_IDS`)
+  - initial member role bundle (`BACKEND_INITIAL_MEMBER_ROLE_ID`)
+  - runs in background by default (`BACKEND_BOOTSTRAP_BLOCKING=false`)
+- Shared Celery wiring with existing bot worker (`backend/core/celery_app.py`)
+- Scheduled backend queue tasks:
+  - voting auto-close
+  - activity publish queue + retry handling
+
+## Run (separate backend env recommended)
+```bash
+python3 -m venv .venv-backend
+source .venv-backend/bin/activate
+pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload
+```
+
+## Notes
+- Bot and backend can share the same Celery broker/backend by using:
+  - `celery -A celery_worker.celery_app worker --loglevel=info`
+  - `celery -A celery_worker.celery_app beat --loglevel=info`
+  - or backend entrypoint: `celery -A backend.celery_worker.celery_app worker --loglevel=info`
+- Ensure these env vars are set before auth flows:
+  - `DISCORD_CLIENT_ID`
+  - `DISCORD_CLIENT_SECRET`
+  - `DISCORD_REDIRECT_URI`
+  - `DISCORD_GUILD_ID`
+  - `DISCORD_BOT_TOKEN`
+  - `JWT_SECRET`
+  - `BACKEND_AUTH_COOKIE_NAME`
+  - `BACKEND_AUTH_COOKIE_SAMESITE`
+  - `BACKEND_AUTH_COOKIE_SECURE`
+- Optional Phase 5 env overrides:
+  - `BACKEND_LOG_FORMAT` (`text` or `json`)
+  - `BACKEND_RATE_LIMIT_ENABLED`
+  - `BACKEND_RATE_LIMIT_WINDOW_SECONDS`
+  - `BACKEND_RATE_LIMIT_MAX_REQUESTS`
+  - `BACKEND_RATE_LIMIT_PRIVILEGED_MAX_REQUESTS`
+  - `BACKEND_RATE_LIMIT_AUTH_MAX_REQUESTS`
+  - `BACKEND_IPC_MAX_RETRIES`
+  - `BACKEND_IPC_RETRY_BACKOFF_MS`
+  - `BACKEND_IPC_DEAD_LETTER_MAXLEN`
+  - `BACKEND_BOOTSTRAP_BLOCKING`
+  - `BACKEND_BOOTSTRAP_RETRY_ATTEMPTS`
+  - `BACKEND_BOOTSTRAP_RETRY_DELAY_SECONDS`
+- Phase 5 operations guide:
+  - `backend/docs/OPERATIONS_BACKUP_AND_MIGRATIONS.md`
+
