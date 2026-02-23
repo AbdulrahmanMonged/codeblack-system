@@ -444,7 +444,7 @@ class ConfigRegistryService:
             separators=(",", ":"),
             default=str,
         )
-        secret = (self.settings.JWT_SECRET or "REDACTED-dev-signing").encode("utf-8")
+        secret = (self.settings.JWT_SECRET or "codeblack-dev-signing").encode("utf-8")
         digest = hmac.new(secret, canonical.encode("utf-8"), hashlib.sha256).hexdigest()
         return digest
 

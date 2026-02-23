@@ -13,7 +13,7 @@ from bot.repositories.player_repo import PlayerRepository
 logger = logging.getLogger(__name__)
 
 # Redis cache prefix for player lookups
-CACHE_PREFIX = "REDACTED:cache:player"
+CACHE_PREFIX = "codeblack:cache:player"
 CACHE_TTL = 3600  # 1 hour
 
 

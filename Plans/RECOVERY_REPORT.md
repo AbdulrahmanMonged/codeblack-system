@@ -1,13 +1,13 @@
 # Recovery Report (2026-02-20)
 
 ## Source of recovery
-- Disk remnant base: `/media/test_recovery/coding-projectes/REDACTED-bot`
+- Disk remnant base: `/media/test_recovery/coding-projectes/codeblack-bot`
 - Codex session replay source: `/home/bodyy/.codex/sessions/2026/02/18/rollout-2026-02-18T17-58-12-019c7179-2c2f-7a43-82b1-b8965a94deeb.jsonl`
 
 ## Recovery output
-- Recovered working copy: `/home/bodyy/REDACTED-bot-recovered-20260220`
-- Archive backup: `/home/bodyy/REDACTED-bot-recovered-20260220.tar.gz`
-- Replay failure log: `/home/bodyy/REDACTED-bot-recovered-20260220/codex_recovery_apply_failures.log`
+- Recovered working copy: `/home/bodyy/codeblack-bot-recovered-20260220`
+- Archive backup: `/home/bodyy/codeblack-bot-recovered-20260220.tar.gz`
+- Replay failure log: `/home/bodyy/codeblack-bot-recovered-20260220/codex_recovery_apply_failures.log`
 
 ## Replay stats
 - `apply_patch` operations found: `920`

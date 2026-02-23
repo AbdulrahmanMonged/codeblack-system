@@ -286,7 +286,7 @@ export function GlobalNavbar({ embedded = false }) {
             </Button>
           ) : null}
           <img
-            src={resolveMediaUrl("/main-logo/REDACTED-round-logo.png")}
+            src={resolveMediaUrl("/main-logo/codeblack-round-logo.png")}
             alt="CodeBlack logo"
             className="h-9 w-9 rounded-full border border-amber-200/40 object-cover transition hover:scale-105"
           />

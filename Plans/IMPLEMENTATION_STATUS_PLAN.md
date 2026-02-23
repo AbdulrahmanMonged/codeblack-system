@@ -1,8 +1,8 @@
 # CodeBlack Recovery Status Plan
 
 ## Scope Used For This Assessment
-- Current recovered workspace: `/home/bodyy/REDACTED-bot-recovered-20260220`
-- Legacy baseline: `/home/bodyy/REDACTED-bot-recovered-20260220/old-bot`
+- Current recovered workspace: `/home/bodyy/codeblack-bot-recovered-20260220`
+- Legacy baseline: `/home/bodyy/codeblack-bot-recovered-20260220/old-bot`
 - Existing status docs reviewed:
   - `BACKEND_PLAN.md`
   - `BACKEND_REMAINING_WORK.md`

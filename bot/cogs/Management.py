@@ -85,7 +85,7 @@ class DeclinedModal(Modal):
                 )
 
             forum_service = self.cog.bot.forum_service
-            redis_key = f"REDACTED:forum:thread:{thread.id}:forum:{RECRUITMENT_TOPIC_ID}"
+            redis_key = f"codeblack:forum:thread:{thread.id}:forum:{RECRUITMENT_TOPIC_ID}"
             existing_msg_id = await RedisManager.get(redis_key)
 
             if existing_msg_id:
@@ -190,7 +190,7 @@ class Management(commands.Cog):
                 "Voting controls are disabled. Final tally is available in the backend dashboard."
             )
 
-        redis_key = f"REDACTED:forum:thread:{thread.id}:forum:{RECRUITMENT_TOPIC_ID}"
+        redis_key = f"codeblack:forum:thread:{thread.id}:forum:{RECRUITMENT_TOPIC_ID}"
         existing_msg_id = await RedisManager.get(redis_key)
 
         if existing_msg_id:
@@ -218,20 +218,20 @@ class Management(commands.Cog):
     ):
         match decision:
             case Decisions.ACCEPTED:
-                return f"""[img]https://i.ibb.co/zh9m4jf/REDACTED-application-result.png[/img]
+                return f"""[img]https://i.ibb.co/zh9m4jf/codeblack-application-result.png[/img]
 
 [font=trebuchet ms][b][size=12pt]{nickname} | {accName}[/size][/b][/font]
 
 [hr]
 
-Your application to become a REDACTED delegate has been [b][color=green]accepted[/color][/b].
+Your application to become a codeblack delegate has been [b][color=green]accepted[/color][/b].
 As a final step to join the group, you must conduct an interview with any Sentinel+ that is available. You can contact them in-game or through our [url=https://discord.gg/qscUeckMmJ]discord server[/url]. If after 48 hours no contact for an interview has been made, we will consider that you are no longer interested in joining the group.
 
 Thank you for your interest,
 {rank}, {author}"""
 
             case Decisions.PENDING:
-                return f"""[img]https://i.ibb.co/zh9m4jf/REDACTED-application-result.png[/img]
+                return f"""[img]https://i.ibb.co/zh9m4jf/codeblack-application-result.png[/img]
 
 [font=trebuchet ms][b][size=12pt]{nickname} | {accName}[/size][/b][/font]
 
@@ -239,20 +239,20 @@ Thank you for your interest,
 
 [hr]
 
-Your application to become a REDACTED delegate is now set as [b][color=orange]pending[/color][/b]. The voting process has begun, and a response will be given in no less than 72 hours.
+Your application to become a codeblack delegate is now set as [b][color=orange]pending[/color][/b]. The voting process has begun, and a response will be given in no less than 72 hours.
 If after 72 hours you have not received a response to your application, you are authorized to contact a Sentinel+ for review.
 
 Thank you for your interest,
 {rank}, {author}"""
 
             case Decisions.DECLINED:
-                return f"""[img]https://i.ibb.co/zh9m4jf/REDACTED-application-result.png[/img]
+                return f"""[img]https://i.ibb.co/zh9m4jf/codeblack-application-result.png[/img]
 
 [font=trebuchet ms][b][size=12pt]{nickname} | {accName}[/size][/b][/font]
 
 [hr]
 
-Your application to become a REDACTED delegate has been [b][color=red]rejected[/color][/b].
+Your application to become a codeblack delegate has been [b][color=red]rejected[/color][/b].
 This is because most of the leaders have voted negative on your application, mainly for the following reason:
 - {"\n- ".join(reason for reason in reasons.split("\n"))}
 

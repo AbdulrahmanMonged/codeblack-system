@@ -22,7 +22,7 @@ This file tracks what is still pending after the latest backend cutover pass.
 
 Local recovery note:
 - Alembic dependency is now included in `backend/requirements.txt`.
-- In the recovered local workspace used for reconstruction (`/home/bodyy/REDACTED-bot-recovered-20260220`), Alembic graph resolution is fixed (`alembic heads` works).
+- In the recovered local workspace used for reconstruction (`/home/bodyy/codeblack-bot-recovered-20260220`), Alembic graph resolution is fixed (`alembic heads` works).
 - `alembic current` and `alembic upgrade head` were successfully executed by reusing valid Postgres credentials from `old-bot/.env`.
 
 Acceptance:

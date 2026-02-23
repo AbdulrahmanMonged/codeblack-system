@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "REDACTED"
+    POSTGRES_DB: str = "codeblack"
 
     @property
     def DATABASE_URL(self) -> str:
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
 
     # IPC
-    IPC_STREAM_PREFIX: str = "REDACTED"
+    IPC_STREAM_PREFIX: str = "codeblack"
 
     # GitHub (for auto-update)
     GITHUB_TOKEN: str = ""

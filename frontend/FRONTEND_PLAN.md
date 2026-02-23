@@ -38,7 +38,7 @@ Required supporting stack for a feature-rich frontend:
 ## 3. Existing Inputs in This Repository
 - Backend modules exist for auth, permissions, applications, orders, roster, playerbase, blacklist, activities, vacations, voting, notifications, admin, config, and bot control.
 - HeroUI v2 templates are available in `templates/` and will be used as visual references only.
-- Media assets are available in `REDACTED-media/main/` and `REDACTED-media/random/`.
+- Media assets are available in `codeblack-media/main/` and `codeblack-media/random/`.
 
 ## 4. Frontend Architecture
 Use feature-first architecture with shared app/core layers.
@@ -98,15 +98,15 @@ HeroUI v3 does not provide the old v2 navbar pattern, so build a custom shell wi
 ### 5.2 Transparent background system
 Use layered backgrounds:
 - base: transparent page background
-- media layer: route-mapped banner from `REDACTED-media/main/`
-- fallback media layer: random image from `REDACTED-media/random/`
+- media layer: route-mapped banner from `codeblack-media/main/`
+- fallback media layer: random image from `codeblack-media/random/`
 - readability layer: translucent gradient overlays + blur where needed
 
 Initial route banner mapping:
-- `/dashboard` -> `REDACTED-media/main/REDACTED-glitched-banner.gif`
-- `/applications*` -> `REDACTED-media/main/application-banner.png`
-- `/roster*` -> `REDACTED-media/main/hall-of-fame-roster-banner.png`
-- `/activities*` and `/vacations*` -> `REDACTED-media/main/gathering-for-patrol.png`
+- `/dashboard` -> `codeblack-media/main/codeblack-glitched-banner.gif`
+- `/applications*` -> `codeblack-media/main/application-banner.png`
+- `/roster*` -> `codeblack-media/main/hall-of-fame-roster-banner.png`
+- `/activities*` and `/vacations*` -> `codeblack-media/main/gathering-for-patrol.png`
 - everything else -> random fallback image
 
 ### 5.3 Motion language

@@ -12,7 +12,7 @@ from .capsolver_strategy import CapsolverStrategy
 
 logger = logging.getLogger(__name__)
 
-SESSION_REDIS_PREFIX = "REDACTED:cf:session"
+SESSION_REDIS_PREFIX = "codeblack:cf:session"
 SESSION_REDIS_TTL_SECONDS = 24 * 60 * 60
 
 

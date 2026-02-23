@@ -29,7 +29,7 @@ Backend goal:
 - `roots` supports flexible 2-letter codes (not strict ISO-only validation).
 - Vacation return requires manual confirmation (no automatic return-state transition).
 - Blacklist suffix pattern (`C-X`) is environment/group-aware and configurable for future multi-environment support.
-- Authorization is Discord-native: backend uses actual Discord roles from the REDACTED guild, synced and mapped to permissions by owners.
+- Authorization is Discord-native: backend uses actual Discord roles from the codeblack guild, synced and mapped to permissions by owners.
 - No manually created backend role hierarchy; promotions/demotions in Discord immediately affect backend permissions after sync.
 - Patrol/training activities can be approved before scheduling; forum posting is blocked until `scheduled_for` is set.
 - Initial Discord role ID `1312800512139202732` receives the first permission bundle.
@@ -52,7 +52,7 @@ Deliverables:
 - Guild membership and role synchronization.
 - Permission-based access control mapped from Discord guild roles.
 - Public-read policy with restricted actions.
-- Permission checks for `REDACTED` role (once role ID is configured).
+- Permission checks for `codeblack` role (once role ID is configured).
 
 ### Access Policy Decisions
 - Public routes:
@@ -260,10 +260,10 @@ Initial permission catalog:
 - `owner.override`
 
 Initial role threshold policy:
-- Voting cast: any Discord role granted `voting.cast` (default include `REDACTED` role).
+- Voting cast: any Discord role granted `voting.cast` (default include `codeblack` role).
 - Voting moderation (close/reopen/reset/list voters): roles granted `voting.close|reopen|reset|list_voters`.
 - Voting auto-close: owner-configured duration policy (default operational window 3-7 days).
-- Order submission: roles granted `orders.submit` (default include `REDACTED` role).
+- Order submission: roles granted `orders.submit` (default include `codeblack` role).
 - Order decisions: roles granted `orders.decision.accept|deny`.
 - Blacklist operations: roles granted `blacklist.add|update|remove|restore`.
 - Blacklist removal request review: roles granted `blacklist_removal_requests.review`.
@@ -278,7 +278,7 @@ Initial role threshold policy:
 
 Authorization resolution order:
 - Check user is authenticated.
-- Check guild membership in REDACTED Discord server.
+- Check guild membership in codeblack Discord server.
 - Sync (or read cached) current Discord roles for the user.
 - Resolve permissions from `discord_role_permissions`.
 - Evaluate blacklist gate:
@@ -459,7 +459,7 @@ Deliverables:
 Data model (minimum):
 - `groups`
   - `id`
-  - `code` (unique, e.g. `REDACTED`)
+  - `code` (unique, e.g. `codeblack`)
   - `name`
   - `is_active`
 - `playerbase`
@@ -676,7 +676,7 @@ Potentially disable in bot once backend controls exist:
 
 8. Role Mapping Strategy
 - Persist `discord_user_id`, `username`, `avatar`, `guild_roles`.
-- Sync real Discord roles from REDACTED guild (role ID, name, position).
+- Sync real Discord roles from codeblack guild (role ID, name, position).
 - Owners assign permission sets directly to Discord role IDs in DB.
 - Effective permissions are computed from the user's current Discord roles.
 - Promotions/demotions in Discord alter backend access automatically after role sync.

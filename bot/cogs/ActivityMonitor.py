@@ -104,7 +104,7 @@ class ActivityMonitor(commands.Cog):
             logger.debug("Skipping player cache refresh: services are not initialized")
             return
 
-        result = await scraper.fetch_players_by_group(group_filter="REDACTED")
+        result = await scraper.fetch_players_by_group(group_filter="codeblack")
         if not result:
             return
 
@@ -137,7 +137,7 @@ class ActivityMonitor(commands.Cog):
             return account_name
 
         # Fallback: website
-        result = await scraper.fetch_players_by_group(group_filter="REDACTED")
+        result = await scraper.fetch_players_by_group(group_filter="codeblack")
         if not result:
             return None
 
@@ -161,7 +161,7 @@ class ActivityMonitor(commands.Cog):
 
         current_time = time.time()
 
-        redis_key = f"REDACTED:activity:online:{account_name}"
+        redis_key = f"codeblack:activity:online:{account_name}"
         existing_data = await RedisManager.get(redis_key, as_json=True)
 
         if existing_data:
@@ -191,7 +191,7 @@ class ActivityMonitor(commands.Cog):
 
         current_time = time.time()
 
-        redis_key = f"REDACTED:activity:online:{account_name}"
+        redis_key = f"codeblack:activity:online:{account_name}"
         player_data = await RedisManager.get(redis_key, as_json=True)
 
         if not player_data:

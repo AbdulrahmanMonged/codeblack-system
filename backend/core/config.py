@@ -55,13 +55,13 @@ class BackendSettings(BaseSettings):
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "REDACTED"
+    POSTGRES_DB: str = "codeblack"
 
     # Redis / IPC
     REDIS_URL: str = "redis://localhost:6379/0"
-    IPC_STREAM_PREFIX: str = "REDACTED"
+    IPC_STREAM_PREFIX: str = "codeblack"
     BACKEND_CACHE_ENABLED: bool = True
-    BACKEND_CACHE_PREFIX: str = "REDACTED:cache"
+    BACKEND_CACHE_PREFIX: str = "codeblack:cache"
     BACKEND_CACHE_PUBLIC_TTL_SECONDS: int = 60
     BACKEND_CACHE_AUTH_LIST_TTL_SECONDS: int = 30
     BACKEND_CACHE_NOTIFICATIONS_TTL_SECONDS: int = 15
@@ -86,7 +86,7 @@ class BackendSettings(BaseSettings):
     BACKEND_AUTH_STATE_TTL_SECONDS: int = 600
     BACKEND_AUTH_FRONTEND_SUCCESS_URL: str = ""
     BACKEND_AUTH_FRONTEND_FAILURE_URL: str = ""
-    BACKEND_AUTH_COOKIE_NAME: str = "REDACTED_session"
+    BACKEND_AUTH_COOKIE_NAME: str = "codeblack_session"
     BACKEND_AUTH_COOKIE_PATH: str = "/"
     BACKEND_AUTH_COOKIE_DOMAIN: str = ""
     BACKEND_AUTH_COOKIE_SAMESITE: str = "lax"

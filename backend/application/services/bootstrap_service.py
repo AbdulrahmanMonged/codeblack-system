@@ -38,7 +38,7 @@ class BootstrapService:
                 await repo.ensure_discord_role(
                     guild_id=self.settings.DISCORD_GUILD_ID,
                     discord_role_id=self.settings.BACKEND_INITIAL_MEMBER_ROLE_ID,
-                    name="REDACTED",
+                    name="codeblack",
                     position=0,
                 )
                 await repo.grant_role_permissions(

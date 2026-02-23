@@ -51,7 +51,7 @@ class Tasks(commands.Cog):
             logger.debug("Skipping cop score tick: scraper service not initialized")
             return
 
-        redis_key = f"REDACTED:cop_scores:{TOP_SCORES_LIVE_CHANNEL_ID}:msg_id"
+        redis_key = f"codeblack:cop_scores:{TOP_SCORES_LIVE_CHANNEL_ID}:msg_id"
 
         try:
             scores = await scraper_service.fetch_cop_live_scores()

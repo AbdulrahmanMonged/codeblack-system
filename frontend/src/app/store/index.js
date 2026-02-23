@@ -32,7 +32,7 @@ const rootReducer = combineReducers({
 });
 
 const persistConfig = {
-  key: "REDACTED-frontend",
+  key: "codeblack-frontend",
   version: 1,
   storage,
   whitelist: ["ui"],

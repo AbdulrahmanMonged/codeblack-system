@@ -57,7 +57,7 @@ class TableImageGenerator:
             'header': ('arialbd.ttf', 15),
             'name_bold': ('arialbd.ttf', 14),
             'text_bold': ('arialbd.ttf', 12),
-            'text_bold_large': ('arialbd.ttf', 16),  # For emphasized text like "REDACTED" group
+            'text_bold_large': ('arialbd.ttf', 16),  # For emphasized text like "codeblack" group
             'regular': ('arial.ttf', 12),
             'id': ('arialbd.ttf', 14),
             'footer': ('arialbd.ttf', self.style['footer_font_size']),
@@ -553,7 +553,7 @@ def generate_cop_live_scores_image(scores: List[Dict[str, Any]]) -> io.BytesIO:
 
     # Load logo
     try:
-        logo = Image.open("media/REDACTED-round-logo.png")
+        logo = Image.open("media/codeblack-round-logo.png")
         logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
         logo_x = (total_width - logo_size) // 2
         logo_y = 10
@@ -569,7 +569,7 @@ def generate_cop_live_scores_image(scores: List[Dict[str, Any]]) -> io.BytesIO:
         font_page_header = ImageFont.truetype("arialbd.ttf", 28)  # Page header font
         font_rank_large = ImageFont.truetype("arialbd.ttf", 48)
         font_group_large = ImageFont.truetype("arialbd.ttf", 18)
-        font_group_REDACTED = ImageFont.truetype("arialbd.ttf", 22)  # Bigger font for REDACTED
+        font_group_codeblack = ImageFont.truetype("arialbd.ttf", 22)  # Bigger font for codeblack
         font_points_large = ImageFont.truetype("arialbd.ttf", 24)
         font_label = ImageFont.truetype("arial.ttf", 12)
         font_header = ImageFont.truetype("arialbd.ttf", 15)
@@ -580,7 +580,7 @@ def generate_cop_live_scores_image(scores: List[Dict[str, Any]]) -> io.BytesIO:
             font_page_header = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)  # Page header font
             font_rank_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48)
             font_group_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
-            font_group_REDACTED = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)  # Bigger font for REDACTED
+            font_group_codeblack = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)  # Bigger font for codeblack
             font_points_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
             font_label = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
             font_header = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
@@ -590,7 +590,7 @@ def generate_cop_live_scores_image(scores: List[Dict[str, Any]]) -> io.BytesIO:
             font_page_header = ImageFont.load_default()
             font_rank_large = ImageFont.load_default()
             font_group_large = ImageFont.load_default()
-            font_group_REDACTED = ImageFont.load_default()
+            font_group_codeblack = ImageFont.load_default()
             font_points_large = ImageFont.load_default()
             font_label = ImageFont.load_default()
             font_header = ImageFont.load_default()
@@ -665,14 +665,14 @@ def generate_cop_live_scores_image(scores: List[Dict[str, Any]]) -> io.BytesIO:
 
         # Group name
         group_name = score.get('group', 'Unknown')
-        is_REDACTED = group_name.lower() == 'REDACTED'
+        is_codeblack = group_name.lower() == 'codeblack'
 
         # Truncate if too long
         if len(group_name) > 18:
             group_name = group_name[:15] + "..."
 
-        # Use bigger font for REDACTED
-        group_font = font_group_REDACTED if is_REDACTED else font_group_large
+        # Use bigger font for codeblack
+        group_font = font_group_codeblack if is_codeblack else font_group_large
         group_bbox = draw.textbbox((0, 0), group_name, font=group_font)
         group_width = group_bbox[2] - group_bbox[0]
         draw.text(
@@ -749,8 +749,8 @@ def generate_cop_live_scores_image(scores: List[Dict[str, Any]]) -> io.BytesIO:
 
             # Group name
             group_name = score.get('group', 'Unknown')
-            is_REDACTED = group_name.lower() == 'REDACTED'
-            group_font = font_group_large if is_REDACTED else font_regular
+            is_codeblack = group_name.lower() == 'codeblack'
+            group_font = font_group_large if is_codeblack else font_regular
             draw.text((col_group_x, y_pos + 15), group_name, fill=(0, 0, 0), font=group_font)
 
             # Arrest points
@@ -814,7 +814,7 @@ def generate_online_players_image(players: List[Dict[str, Any]]) -> io.BytesIO:
     if not players or len(players) == 0:
         return generator.generate_empty_message(
             message="No online Player currently",
-            logo_path="media/REDACTED-round-logo.png",
+            logo_path="media/codeblack-round-logo.png",
             page_header="Current online Players"
         )
 
@@ -872,7 +872,7 @@ def generate_online_players_image(players: List[Dict[str, Any]]) -> io.BytesIO:
         headers=headers,
         rows=rows,
         column_widths=column_widths,
-        logo_path="media/REDACTED-round-logo.png",
+        logo_path="media/codeblack-round-logo.png",
         footer_text=None,  # Use fixed footer only
         page_header="Current online Players"
     )

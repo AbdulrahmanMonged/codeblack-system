@@ -13,7 +13,7 @@ BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 
 celery_app = Celery(
-    "REDACTED",
+    "codeblack",
     broker=BROKER_URL,
     backend=RESULT_BACKEND,
 )

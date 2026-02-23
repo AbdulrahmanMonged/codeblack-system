@@ -11,7 +11,7 @@ const MAIN_BANNERS = [
       pathname === "/verify-account" ||
       pathname.startsWith("/admin") ||
       pathname.startsWith("/config"),
-    src: resolveMediaUrl("/main/REDACTED-glitched-banner.gif"),
+    src: resolveMediaUrl("/main/codeblack-glitched-banner.gif"),
   },
   {
     matches: (pathname) => pathname.startsWith("/applications"),

@@ -18,15 +18,15 @@ class VotingView(discord.ui.View):
 
     @staticmethod
     def get_vote_key(thread_id: int) -> str:
-        return f"REDACTED:voting:thread:{thread_id}"
+        return f"codeblack:voting:thread:{thread_id}"
 
     @staticmethod
     def get_voters_key(thread_id: int) -> str:
-        return f"REDACTED:voting:thread:{thread_id}:voters"
+        return f"codeblack:voting:thread:{thread_id}:voters"
 
     @staticmethod
     def get_voter_choice_key(thread_id: int, user_id: int) -> str:
-        return f"REDACTED:voting:thread:{thread_id}:voter:{user_id}"
+        return f"codeblack:voting:thread:{thread_id}:voter:{user_id}"
 
     def get_thread_id_from_interaction(self, interaction: discord.Interaction) -> int:
         if isinstance(interaction.channel, discord.Thread):
@@ -70,7 +70,7 @@ class Voting(commands.Cog):
         logger.info("VotingView registered as persistent view")
 
     async def end_voting_and_update_message(self, thread_id: int):
-        vote_msg_key = f"REDACTED:voting:thread:{thread_id}:message_id"
+        vote_msg_key = f"codeblack:voting:thread:{thread_id}:message_id"
         msg_id = await RedisManager.get(vote_msg_key)
         if not msg_id:
             return

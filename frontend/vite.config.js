@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-const publicDir = fileURLToPath(new URL("../REDACTED-media", import.meta.url));
+const publicDir = fileURLToPath(new URL("../codeblack-media", import.meta.url));
 const srcDir = fileURLToPath(new URL("./src", import.meta.url));
 
 export default defineConfig({

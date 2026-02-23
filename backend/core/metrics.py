@@ -84,107 +84,107 @@ class MetricsRegistry:
 
             lines.extend(
                 [
-                    "# HELP REDACTED_http_requests_total Total HTTP requests by route.",
-                    "# TYPE REDACTED_http_requests_total counter",
+                    "# HELP codeblack_http_requests_total Total HTTP requests by route.",
+                    "# TYPE codeblack_http_requests_total counter",
                 ]
             )
             for (method, path, status), value in sorted(self._http_requests_total.items()):
                 lines.append(
-                    f'REDACTED_http_requests_total{{method="{_escape(method)}",path="{_escape(path)}",status="{_escape(status)}"}} {value}'
+                    f'codeblack_http_requests_total{{method="{_escape(method)}",path="{_escape(path)}",status="{_escape(status)}"}} {value}'
                 )
 
             lines.extend(
                 [
-                    "# HELP REDACTED_http_request_duration_seconds HTTP request latency histogram.",
-                    "# TYPE REDACTED_http_request_duration_seconds histogram",
+                    "# HELP codeblack_http_request_duration_seconds HTTP request latency histogram.",
+                    "# TYPE codeblack_http_request_duration_seconds histogram",
                 ]
             )
             for (method, path, le), value in sorted(
                 self._http_request_duration_seconds_bucket.items()
             ):
                 lines.append(
-                    f'REDACTED_http_request_duration_seconds_bucket{{method="{_escape(method)}",path="{_escape(path)}",le="{_escape(le)}"}} {value}'
+                    f'codeblack_http_request_duration_seconds_bucket{{method="{_escape(method)}",path="{_escape(path)}",le="{_escape(le)}"}} {value}'
                 )
             for (method, path), value in sorted(
                 self._http_request_duration_seconds_count.items()
             ):
                 lines.append(
-                    f'REDACTED_http_request_duration_seconds_count{{method="{_escape(method)}",path="{_escape(path)}"}} {value}'
+                    f'codeblack_http_request_duration_seconds_count{{method="{_escape(method)}",path="{_escape(path)}"}} {value}'
                 )
             for (method, path), value in sorted(
                 self._http_request_duration_seconds_sum.items()
             ):
                 lines.append(
-                    f'REDACTED_http_request_duration_seconds_sum{{method="{_escape(method)}",path="{_escape(path)}"}} {value}'
+                    f'codeblack_http_request_duration_seconds_sum{{method="{_escape(method)}",path="{_escape(path)}"}} {value}'
                 )
 
             lines.extend(
                 [
-                    "# HELP REDACTED_ipc_commands_total Bot IPC command outcomes.",
-                    "# TYPE REDACTED_ipc_commands_total counter",
+                    "# HELP codeblack_ipc_commands_total Bot IPC command outcomes.",
+                    "# TYPE codeblack_ipc_commands_total counter",
                 ]
             )
             for (command_type, result), value in sorted(self._ipc_commands_total.items()):
                 lines.append(
-                    f'REDACTED_ipc_commands_total{{command_type="{_escape(command_type)}",result="{_escape(result)}"}} {value}'
+                    f'codeblack_ipc_commands_total{{command_type="{_escape(command_type)}",result="{_escape(result)}"}} {value}'
                 )
 
             lines.extend(
                 [
-                    "# HELP REDACTED_ipc_retries_total Bot IPC command retry attempts.",
-                    "# TYPE REDACTED_ipc_retries_total counter",
+                    "# HELP codeblack_ipc_retries_total Bot IPC command retry attempts.",
+                    "# TYPE codeblack_ipc_retries_total counter",
                 ]
             )
             for (command_type,), value in sorted(self._ipc_retries_total.items()):
                 lines.append(
-                    f'REDACTED_ipc_retries_total{{command_type="{_escape(command_type)}"}} {value}'
+                    f'codeblack_ipc_retries_total{{command_type="{_escape(command_type)}"}} {value}'
                 )
 
             lines.extend(
                 [
-                    "# HELP REDACTED_ipc_command_duration_seconds Bot IPC command latency histogram.",
-                    "# TYPE REDACTED_ipc_command_duration_seconds histogram",
+                    "# HELP codeblack_ipc_command_duration_seconds Bot IPC command latency histogram.",
+                    "# TYPE codeblack_ipc_command_duration_seconds histogram",
                 ]
             )
             for (command_type, le), value in sorted(
                 self._ipc_command_duration_seconds_bucket.items()
             ):
                 lines.append(
-                    f'REDACTED_ipc_command_duration_seconds_bucket{{command_type="{_escape(command_type)}",le="{_escape(le)}"}} {value}'
+                    f'codeblack_ipc_command_duration_seconds_bucket{{command_type="{_escape(command_type)}",le="{_escape(le)}"}} {value}'
                 )
             for (command_type,), value in sorted(
                 self._ipc_command_duration_seconds_count.items()
             ):
                 lines.append(
-                    f'REDACTED_ipc_command_duration_seconds_count{{command_type="{_escape(command_type)}"}} {value}'
+                    f'codeblack_ipc_command_duration_seconds_count{{command_type="{_escape(command_type)}"}} {value}'
                 )
             for (command_type,), value in sorted(
                 self._ipc_command_duration_seconds_sum.items()
             ):
                 lines.append(
-                    f'REDACTED_ipc_command_duration_seconds_sum{{command_type="{_escape(command_type)}"}} {value}'
+                    f'codeblack_ipc_command_duration_seconds_sum{{command_type="{_escape(command_type)}"}} {value}'
                 )
 
             lines.extend(
                 [
-                    "# HELP REDACTED_rate_limit_rejections_total Rate-limited HTTP requests.",
-                    "# TYPE REDACTED_rate_limit_rejections_total counter",
+                    "# HELP codeblack_rate_limit_rejections_total Rate-limited HTTP requests.",
+                    "# TYPE codeblack_rate_limit_rejections_total counter",
                 ]
             )
             for (scope,), value in sorted(self._rate_limit_rejections_total.items()):
                 lines.append(
-                    f'REDACTED_rate_limit_rejections_total{{scope="{_escape(scope)}"}} {value}'
+                    f'codeblack_rate_limit_rejections_total{{scope="{_escape(scope)}"}} {value}'
                 )
 
             lines.extend(
                 [
-                    "# HELP REDACTED_authz_failures_total Authorization/authentication failures on privileged paths.",
-                    "# TYPE REDACTED_authz_failures_total counter",
+                    "# HELP codeblack_authz_failures_total Authorization/authentication failures on privileged paths.",
+                    "# TYPE codeblack_authz_failures_total counter",
                 ]
             )
             for (scope, status), value in sorted(self._authz_failures_total.items()):
                 lines.append(
-                    f'REDACTED_authz_failures_total{{scope="{_escape(scope)}",status="{_escape(status)}"}} {value}'
+                    f'codeblack_authz_failures_total{{scope="{_escape(scope)}",status="{_escape(status)}"}} {value}'
                 )
 
             return "\n".join(lines) + "\n"

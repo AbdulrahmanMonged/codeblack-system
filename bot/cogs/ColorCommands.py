@@ -43,7 +43,7 @@ class ColorCommands(commands.Cog):
             if not account_name or not player_name:
                 continue
 
-            redis_key = f"REDACTED:activity:online:{account_name}"
+            redis_key = f"codeblack:activity:online:{account_name}"
             existing_data = await RedisManager.get(redis_key, as_json=True)
 
             if existing_data:
@@ -87,7 +87,7 @@ class ColorCommands(commands.Cog):
                 if not account_name or account_name in online_account_names:
                     continue
 
-                redis_key = f"REDACTED:activity:online:{account_name}"
+                redis_key = f"codeblack:activity:online:{account_name}"
                 player_data = await RedisManager.get(redis_key, as_json=True)
 
                 if player_data:
@@ -127,10 +127,10 @@ class ColorCommands(commands.Cog):
             logger.debug("Skipping online players tick: scraper service not initialized")
             return
 
-        redis_key = f"REDACTED:online_players:{ONLINE_PLAYERS_CHANNEL_ID}:msg_id"
+        redis_key = f"codeblack:online_players:{ONLINE_PLAYERS_CHANNEL_ID}:msg_id"
 
         try:
-            players = await scraper.fetch_players_by_group(group_filter="REDACTED")
+            players = await scraper.fetch_players_by_group(group_filter="codeblack")
             players = players or []
 
             if players:

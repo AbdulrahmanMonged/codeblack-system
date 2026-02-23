@@ -13,8 +13,8 @@ from bot.core.redis import RedisManager
 logger = logging.getLogger(__name__)
 
 BOARD_NUMBER = "1537"
-REDIS_WATCH_PREFIX = "REDACTED:forum:watch"
-REDIS_THREAD_PREFIX = "REDACTED:forum:thread"
+REDIS_WATCH_PREFIX = "codeblack:forum:watch"
+REDIS_THREAD_PREFIX = "codeblack:forum:thread"
 
 
 class ForumService:

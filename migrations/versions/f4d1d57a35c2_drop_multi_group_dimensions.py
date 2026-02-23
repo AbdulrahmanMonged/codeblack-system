@@ -128,7 +128,7 @@ def downgrade() -> None:
     op.execute(
         sa.text(
             "INSERT INTO groups (code, name, is_active) "
-            "VALUES ('REDACTED', 'CodeBlack', true)"
+            "VALUES ('codeblack', 'CodeBlack', true)"
         )
     )
 
@@ -138,7 +138,7 @@ def downgrade() -> None:
     op.execute(
         sa.text(
             "UPDATE group_memberships SET group_id = "
-            "(SELECT id FROM groups WHERE code = 'REDACTED' LIMIT 1)"
+            "(SELECT id FROM groups WHERE code = 'codeblack' LIMIT 1)"
         )
     )
     op.create_foreign_key(
@@ -162,7 +162,7 @@ def downgrade() -> None:
     op.execute(
         sa.text(
             "UPDATE group_ranks SET group_id = "
-            "(SELECT id FROM groups WHERE code = 'REDACTED' LIMIT 1)"
+            "(SELECT id FROM groups WHERE code = 'codeblack' LIMIT 1)"
         )
     )
     op.create_foreign_key(
@@ -181,7 +181,7 @@ def downgrade() -> None:
     op.execute(
         sa.text(
             "UPDATE group_activities SET group_id = "
-            "(SELECT id FROM groups WHERE code = 'REDACTED' LIMIT 1)"
+            "(SELECT id FROM groups WHERE code = 'codeblack' LIMIT 1)"
         )
     )
     op.create_foreign_key(

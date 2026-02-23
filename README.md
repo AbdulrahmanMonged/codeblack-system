@@ -286,7 +286,7 @@ The bot and backend **share the same PostgreSQL schema** through async SQLAlchem
 ## Project Structure
 
 <pre>
-REDACTED-system/
+codeblack-system/
 ├── backend/
 │   ├── api/
 │   │   ├── routes/          # 21 REST route modules
@@ -374,8 +374,8 @@ REDACTED-system/
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/your-org/REDACTED-system.git
-cd REDACTED-system
+git clone https://github.com/your-org/codeblack-system.git
+cd codeblack-system
 cp .env.example .env
 # Edit .env — Discord credentials, database, Redis, JWT secret, etc.
 ```

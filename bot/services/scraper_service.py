@@ -47,7 +47,7 @@ class ScraperService:
 
     async def fetch_players_by_group(
         self,
-        group_filter: str = "REDACTED",
+        group_filter: str = "codeblack",
         url: str = "https://cit.gg/rpp/players.php",
     ) -> list[dict] | None:
         """Fetch online players filtered by group."""
