@@ -374,7 +374,7 @@ codeblack-system/
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/your-org/codeblack-system.git
+git clone https://github.com/AbdulrahmanMonged/codeblack-system.git
 cd codeblack-system
 cp .env.example .env
 # Edit .env — Discord credentials, database, Redis, JWT secret, etc.
